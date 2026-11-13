@@ -234,19 +234,39 @@ ZDATA.colors = [
   { id: 'noir',   name: 'Noir carbone', c: '#1f2937', price: 60 },
   { id: 'or',     name: 'Or champion',  c: '#d4a017', price: 120 }
 ];
-ZDATA.helmets = [
-  { id: 'aucun',  name: 'Casque classique', c: '#f3f4f6', price: 0 },
-  { id: 'flamme', name: 'Casque flamme',    c: '#f97316', price: 40 },
-  { id: 'eclair', name: 'Casque éclair',    c: '#facc15', price: 50 },
-  { id: 'dino',   name: 'Casque dino',      c: '#22c55e', price: 70 },
-  { id: 'pilote', name: 'Casque pilote F1', c: '#ef4444', price: 90 }
+/* Modèles de trottinette : la G2 pour démarrer, puis des modèles plus puissants.
+   price = éclairs, lvl = niveau minimum, bonus = km/h en plus sur l'écran du guidon */
+ZDATA.models = [
+  { id: 'g2',      name: 'Kukirin G2',       label: 'KUKIRIN G2', price: 0,   lvl: 1, bonus: 0 },
+  { id: 'g2max',   name: 'Kukirin G2 Max',   label: 'G2 MAX',     price: 120, lvl: 3, bonus: 3, max: true },
+  { id: 'g4',      name: 'Kukirin G4',       label: 'KUKIRIN G4', price: 250, lvl: 5, bonus: 5, big: true },
+  { id: 'g2ultra', name: 'Kukirin G2 Ultra', label: 'G2 ULTRA',   price: 400, lvl: 7, bonus: 8, max: true, ultra: true },
+  { id: 'g4ultra', name: 'Kukirin G4 Ultra', label: 'G4 ULTRA',   price: 600, lvl: 9, bonus: 10, big: true, ultra: true }
 ];
+/* Casques : c'est la FORME qui change (comme les accessoires des chats), chacun a sa couleur */
+ZDATA.helmets = [
+  { id: 'aucun',    name: 'Casque classique',      c: '#f3f4f6', price: 0 },
+  { id: 'oreilles', name: 'Casque oreilles de chat', c: '#1c1c1f', price: 40 },
+  { id: 'flamme',   name: 'Casque flammes',        c: '#f97316', price: 50 },
+  { id: 'dino',     name: 'Casque dino',           c: '#22c55e', price: 50 },
+  { id: 'requin',   name: 'Casque requin',         c: '#64748b', price: 60 },
+  { id: 'eclair',   name: 'Casque éclair',         c: '#1f2937', price: 60 },
+  { id: 'viking',   name: 'Casque viking',         c: '#9ca3af', price: 70 },
+  { id: 'crete',    name: 'Casque crête punk',     c: '#111827', price: 80 },
+  { id: 'antennes', name: 'Casque extraterrestre', c: '#84cc16', price: 90 },
+  { id: 'integral', name: 'Casque intégral moto',  c: '#dc2626', price: 100 },
+  { id: 'pilote',   name: 'Casque pilote F1',      c: '#ef4444', price: 120 }
+];
+/* Accessoires des chats : chaque chat (Loulou, Moezeh, Doudou, Isis) a les siens, achetés avec les éclairs */
 ZDATA.catItems = [
-  { id: 'aucun',    name: 'Loulou tout simple', price: 0 },
-  { id: 'bandana',  name: 'Bandana de foot',    price: 30 },
-  { id: 'lunettes', name: 'Lunettes de star',   price: 50 },
-  { id: 'couronne', name: 'Couronne de roi',    price: 80 },
-  { id: 'casque',   name: 'Mini-casque',        price: 60 }
+  { id: 'aucun',    name: 'Tout simple',          price: 0 },
+  { id: 'bandana',  name: 'Bandana de foot',      price: 30 },
+  { id: 'noeud',    name: 'Nœud papillon',        price: 40 },
+  { id: 'lunettes', name: 'Lunettes de star',     price: 50 },
+  { id: 'casque',   name: 'Mini-casque',          price: 60 },
+  { id: 'casquette', name: 'Casquette',           price: 60 },
+  { id: 'chapeau',  name: 'Chapeau de magicien',  price: 70 },
+  { id: 'couronne', name: 'Couronne de roi',      price: 80 }
 ];
 
 ZDATA.stickers = [

@@ -45,8 +45,8 @@ function defaultState() {
     name: 'Zouzou Gabi', eclairs: 25, xp: 0,
     streak: { count: 0, last: null },
     words: {}, facts: {}, probs: {}, stickers: {}, route: {},
-    owned: { color: ['orange'], helmet: ['aucun'], cat: ['aucun'] },
-    equip: { color: 'orange', helmet: 'aucun', cat: 'aucun' },
+    owned: { model: ['g2'], color: ['orange'], helmet: ['aucun'], cat: ['aucun'], cat_moezeh: ['aucun'], cat_doudou: ['aucun'], cat_isis: ['aucun'] },
+    equip: { model: 'g2', color: 'orange', helmet: 'aucun', cat: 'aucun', cat_moezeh: 'aucun', cat_doudou: 'aucun', cat_isis: 'aucun' },
     daily: { date: null, games: 0, chest: false },
     customWords: [],
     settings: { rate: 0.9, sound: true },
@@ -94,7 +94,9 @@ Z.levelInfo = function () {
 
 /* Plus Jasmin progresse, plus sa Kukirin va vite (affichée sur l'écran du guidon) */
 Z.speedOf = (lvl) => Math.min(45, 10 + (lvl - 1) * 4);
-Z.speed = () => Z.speedOf(Z.levelInfo().lvl);
+Z.modelOf = (id) => ZDATA.models.find(m => m.id === (id || Z.state.equip.model)) || ZDATA.models[0];
+/* vitesse = celle du niveau + le bonus du modèle (G2 Max, G4, Ultra…) */
+Z.speed = () => Z.speedOf(Z.levelInfo().lvl) + Z.modelOf().bonus;
 /* Les roues, la route et le décor tournent/défilent selon la vitesse */
 Z.applySpeed = function () {
   const v = Z.speed(), r = document.documentElement.style;
@@ -132,13 +134,15 @@ Z.srsUpdate = function (store, id, success) {
 Z.isDue = (it) => it && it.due <= Z.dayNum();
 
 /* ---------- Voix (synthèse vocale du téléphone) ---------- */
-let voice = null;
+let voice = null, maleVoice = null;
 function pickVoice() {
   if (!('speechSynthesis' in window)) return;
   const vs = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().replace('_', '-').startsWith('fr'));
   voice = vs.find(v => /google/i.test(v.name) && /fr-FR/i.test(v.lang.replace('_', '-')))
        || vs.find(v => /fr-FR/i.test(v.lang.replace('_', '-')))
        || vs[0] || null;
+  // Une voix d'homme si le téléphone en a une (Thomas sur iPhone, voix « frd » sur Android…)
+  maleVoice = vs.find(v => /fr-FR/i.test(v.lang.replace('_', '-')) && /thomas|nicolas|daniel|henri|jacques|paul|male|homme|frd/i.test(v.name)) || null;
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 
@@ -156,13 +160,13 @@ function chunksOf(text) {
     return { t, pause };
   });
 }
-function speakOne(text, rate, pitch, my) {
+function speakOne(text, rate, pitch, my, v) {
   return new Promise(resolve => {
     if (my !== speakToken) return resolve();
     // Prononciation : "Moezeh" se dit "Moizè" (le texte affiché ne change pas)
     const u = new SpeechSynthesisUtterance(text.replace(/Moezeh/g, "Moizè"));
     u.lang = 'fr-FR';
-    if (voice) u.voice = voice;
+    if (v || voice) u.voice = v || voice;
     u.rate = rate; u.pitch = pitch;
     let done = false;
     const fin = () => { if (!done) { done = true; resolve(); } };
@@ -191,7 +195,7 @@ Z.speak = function (text, opts = {}) {
     const chunks = singleWord ? [{ t: text.trim(), pause: 0 }] : chunksOf(text);
     for (const c of chunks) {
       if (my !== speakToken) return;
-      await speakOne(c.t, rate, pitch, my);
+      await speakOne(c.t, rate, pitch, my, opts.male ? maleVoice : null);
       if (my !== speakToken) return;
       if (c.pause) await Z.wait(c.pause);
     }
@@ -311,16 +315,70 @@ Z.colorOf = (id) => (ZDATA.colors.find(c => c.id === id) || ZDATA.colors[0]).c;
 Z.helmetOf = (id) => (ZDATA.helmets.find(c => c.id === id) || ZDATA.helmets[0]);
 
 /* Zouzou Gabi sur sa trottinette Kukirin G2 (vue de côté) */
-Z.art.rider = function ({ color, helmet, rider = true } = {}) {
+Z.art.rider = function ({ color, helmet, rider = true, model } = {}) {
   const c = color || Z.colorOf(Z.state.equip.color);
+  const M = Z.modelOf(model);
+  /* Chaque modèle a sa silhouette (d'après les vraies Kukirin) :
+     G2 = compacte · G2 Max = longue, roues fines à jantes alu, grand guidon à clignotants
+     G2 Ultra = roues larges, double moteur doré, rétros, double phare, néons
+     G4 = tout-terrain haute, grosses roues à crampons, garde-boue moto, gros ressorts
+     G4 Ultra = la plus grande : crampons géants, rampe de LED, selle, néons */
+  const SPEC = {
+    g2:      { R: 22, rx: 58, fx: 166, lift: 0,  th: 12, A: 34, B: 172, bar: [134, 172], stemW: 11, tyre: 'med',    springs: 'front', spr: '#fbbf24', fender: 'small', light: 'one' },
+    g2max:   { R: 25, rx: 46, fx: 178, lift: 3,  th: 14, A: 20, B: 188, bar: [122, 186], stemW: 12, tyre: 'thin',   springs: 'both',  spr: '#fbbf24', fender: 'small', light: 'big', signals: 1, battery: 1, accent: '#22d3ee' },
+    g2ultra: { R: 26, rx: 46, fx: 178, lift: 5,  th: 16, A: 20, B: 188, bar: [120, 188], stemW: 15, tyre: 'fat',    springs: 'both',  spr: '#ef4444', fender: 'sport', light: 'dual', signals: 1, mirrors: 1, battery: 1, glow: 1, gold: 1, accent: '#facc15' },
+    g4:      { R: 30, rx: 42, fx: 182, lift: 12, th: 14, A: 18, B: 190, bar: [126, 182], stemW: 14, tyre: 'knobby', springs: 'big',   spr: '#fbbf24', fender: 'moto',  light: 'round', cross: 1, dual: 1, accent: '#84cc16' },
+    g4ultra: { R: 33, rx: 40, fx: 186, lift: 16, th: 18, A: 14, B: 194, bar: [118, 190], stemW: 17, tyre: 'knobby', springs: 'big',   spr: '#ef4444', fender: 'moto',  light: 'bar', cross: 1, dual: 1, signals: 1, mirrors: 1, battery: 1, glow: 1, gold: 1, seat: 1, accent: '#facc15' }
+  };
+  const P = SPEC[M.id] || SPEC.g2;
+  const R = P.R, cy = 176 - R, L = P.lift;
+  const t = 120 - L, bt = t + P.th + 10, A = P.A, B = P.B, barY = 38 - L;
+  const rimC = P.gold ? '#d4a017' : c;
+  const wheelG = (x) => {
+    let w = '';
+    if (P.tyre === 'thin') {        // pneu fin + grande jante alu à 5 branches
+      w = `<circle cx="${x}" cy="${cy}" r="${R}" fill="#111827"/><circle cx="${x}" cy="${cy}" r="${R - 5}" fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"/>`
+        + [0, 72, 144, 216, 288].map(d => { const r = (d - 90) * Math.PI / 180; return `<path d="M${x} ${cy} L${(x + Math.cos(r) * (R - 7)).toFixed(1)} ${(cy + Math.sin(r) * (R - 7)).toFixed(1)}" stroke="${c}" stroke-width="4" stroke-linecap="round"/>`; }).join('')
+        + `<circle cx="${x}" cy="${cy}" r="5" fill="#111827"/>`;
+    } else if (P.tyre === 'fat') {  // pneu très large + moteur doré
+      w = `<circle cx="${x}" cy="${cy}" r="${R}" fill="#111827"/><circle cx="${x}" cy="${cy}" r="${R - 3}" fill="none" stroke="#374151" stroke-width="5" stroke-dasharray="3 3"/><circle cx="${x}" cy="${cy}" r="${R - 13}" fill="${rimC}" stroke="#92400e" stroke-width="1.5"/><path d="M${x + 2} ${cy - 8} l-5 8 h4 l-3 7 l8 -10 h-4 l3 -5z" fill="#111827"/>`;
+    } else if (P.tyre === 'knobby') { // gros crampons tout-terrain
+      w = `<circle cx="${x}" cy="${cy}" r="${R - 3}" fill="#111827"/><circle cx="${x}" cy="${cy}" r="${R - 2}" fill="none" stroke="#111827" stroke-width="7" stroke-dasharray="6 4"/><circle cx="${x}" cy="${cy}" r="${R - 9}" fill="none" stroke="#374151" stroke-width="3"/><circle cx="${x}" cy="${cy}" r="${R - 15}" fill="${rimC}"/><circle cx="${x}" cy="${cy}" r="${R - 20}" fill="#111827"/>`
+        + (P.gold ? `<path d="M${x + 2} ${cy - 8} l-5 8 h4 l-3 7 l8 -10 h-4 l3 -5z" fill="#fde047"/>` : '');
+    } else {                         // G2 : pneu moyen, jante couleur
+      w = `<circle cx="${x}" cy="${cy}" r="${R}" fill="#111827"/><circle cx="${x}" cy="${cy}" r="${R}" fill="none" stroke="#4b5563" stroke-width="4" stroke-dasharray="5 3"/><circle cx="${x}" cy="${cy}" r="${R - 11}" fill="${c}"/><circle cx="${x}" cy="${cy}" r="4" fill="#111827"/><path d="M${x} ${cy - 10} V${cy + 10} M${x - 10} ${cy} H${x + 10}" stroke="#111827" stroke-width="2.5"/>`;
+    }
+    return `<g class="wheel" style="transform-origin:${x}px ${cy}px">${w}</g>`;
+  };
+  // ressort en zigzag entre deux points
+  const coil = (x1, y1, x2, y2, n, col, amp, sw) => {
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len;
+    let d = `M${x1} ${y1}`;
+    for (let i = 1; i < n; i++) { const k = i / n, sgn = i % 2 ? 1 : -1; d += ` L${(x1 + dx * k + nx * amp * sgn).toFixed(1)} ${(y1 + dy * k + ny * amp * sgn).toFixed(1)}`; }
+    return `<path d="${d} L${x2} ${y2}" stroke="${col}" stroke-width="${sw}" fill="none" stroke-linejoin="round"/>`;
+  };
+  const sx = B - 14, sy = t + 4;   // pied de la tige
   const two = !color && !!(ZDATA.colors.find(x => x.id === Z.state.equip.color) || {}).two;
   const deck = two ? '#111827' : c, band = two ? c : '#111827', label = two ? '#fff' : '#111827';
   const hm = Z.helmetOf(helmet || Z.state.equip.helmet);
-  let deco = '';
-  if (hm.id === 'flamme') deco = `<path d="M100 22 q6 -10 12 -2 q4 -8 10 0 q2 -6 6 -2" stroke="#dc2626" stroke-width="3" fill="none"/>`;
-  if (hm.id === 'eclair') deco = `<path d="M110 14 l-6 10 h6 l-4 9 l11 -13 h-6 l4 -6z" fill="#1f2937"/>`;
-  if (hm.id === 'dino') deco = `<path d="M96 20 l4 -8 l4 7 l4 -9 l4 8 l4 -8 l4 9" fill="#15803d"/>`;
-  if (hm.id === 'pilote') deco = `<rect x="98" y="27" width="34" height="7" rx="3" fill="#111827"/><rect x="99" y="16" width="30" height="4" fill="#fff"/>`;
+  /* Formes de casque (la tête est centrée en 112,41) */
+  const D = { // dôme
+    aucun: `<path d="M94 38 a18 18 0 0 1 36 0 z" fill="${hm.c}" stroke="#374151" stroke-width="2"/><path d="M100 30 q12 -8 24 0" stroke="#d1d5db" stroke-width="2" fill="none"/>`
+  };
+  const dome = `<path d="M94 38 a18 18 0 0 1 36 0 z" fill="${hm.c}" stroke="#374151" stroke-width="2"/>`;
+  const shapes = {
+    oreilles: `<path d="M97 28 l-2 -15 l11 9 z M127 28 l2 -15 l-11 9 z" fill="${hm.c}" stroke="#374151" stroke-width="1.5"/><path d="M98 25 l-1 -8 l6 5 z M126 25 l1 -8 l-6 5 z" fill="#f2b3b3"/>`,
+    flamme: `<path d="M96 30 q-4 -14 6 -18 q-2 8 4 10 q0 -12 10 -16 q-3 9 3 13 q4 -9 12 -8 q-5 6 -1 12 q6 -2 6 6" fill="#facc15" stroke="#dc2626" stroke-width="2"/>`,
+    dino: `<path d="M96 24 l3 -9 l5 7 l4 -10 l5 9 l5 -10 l4 10 l5 -7 l2 9" fill="#15803d" stroke="#14532d" stroke-width="1.5"/>`,
+    requin: `<path d="M104 21 l10 -18 l8 20 z" fill="${hm.c}" stroke="#374151" stroke-width="2"/><path d="M118 36 l3 -4 l3 4 l3 -4 l3 4" stroke="#fff" stroke-width="2" fill="none"/>`,
+    eclair: `<path d="M114 2 l-8 14 h7 l-5 12 l14 -17 h-7 l5 -9z" fill="#facc15" stroke="#b45309" stroke-width="1.5"/>`,
+    viking: `<path d="M96 30 q-14 -2 -12 -20 q5 10 14 12 z M128 30 q14 -2 12 -20 q-5 10 -14 12 z" fill="#fef3c7" stroke="#92400e" stroke-width="1.5"/><path d="M94 36 h36" stroke="#a16207" stroke-width="3"/><circle cx="104" cy="31" r="1.5" fill="#a16207"/><circle cx="112" cy="29" r="1.5" fill="#a16207"/><circle cx="120" cy="31" r="1.5" fill="#a16207"/>`,
+    crete: `<path d="M98 24 l1 -14 l5 10 l3 -15 l5 13 l4 -15 l4 14 l5 -11 l2 13 z" fill="#ec4899" stroke="#9d174d" stroke-width="1.5"/>`,
+    antennes: `<path d="M104 22 l-6 -14 M120 22 l6 -14" stroke="#4d7c0f" stroke-width="2.5"/><circle cx="98" cy="7" r="4" fill="#facc15"/><circle cx="126" cy="7" r="4" fill="#facc15"/><circle cx="106" cy="30" r="2.5" fill="#fff"/><circle cx="118" cy="30" r="2.5" fill="#fff"/>`,
+    integral: `<path d="M94 38 L94 50 Q96 59 108 60 L110 46 L113 38 Z" fill="${hm.c}" stroke="#374151" stroke-width="1.5"/><path d="M110 61 Q123 63 131 53 L131 49 L127 49 Q122 57 111 57 Z" fill="${hm.c}" stroke="#374151" stroke-width="1.5"/><path d="M113 36 h18 v11 q-8 3 -18 0 z" fill="#38bdf8" opacity=".45" stroke="#111827" stroke-width="1.5"/>`,
+    pilote: `<rect x="112" y="30" width="20" height="7" rx="3" fill="#111827"/><path d="M96 30 h30" stroke="#fff" stroke-width="3"/><path d="M100 24 h22" stroke="#facc15" stroke-width="2"/>`
+  };
+  const helmetSvg = (hm.id === 'aucun' ? D.aucun : dome) + (shapes[hm.id] || '');
   const kid = rider ? `
     <!-- jambes -->
     <path d="M92 128 L98 96" stroke="#1e3a8a" stroke-width="11" stroke-linecap="round"/>
@@ -344,43 +402,58 @@ Z.art.rider = function ({ color, helmet, rider = true } = {}) {
     <path d="M114 51 q5 4 10 -1" stroke="#9a3b2b" stroke-width="2.2" fill="none" stroke-linecap="round"/>
     <circle cx="115" cy="49" r="2.4" fill="#f4a7a0" opacity=".55"/>
     <!-- casque -->
-    <path d="M94 38 a18 18 0 0 1 36 0 z" fill="${hm.c}" stroke="#374151" stroke-width="2"/>
-    ${deco}` : '';
+    ${helmetSvg}` : '';
+  const F = P.fender === 'moto'
+    ? `<path d="M${P.fx - R - 6} ${cy - R + 4} Q${P.fx} ${cy - R - 18} ${P.fx + R + 10} ${cy - R + 8} L${P.fx + R + 6} ${cy - R + 15} Q${P.fx} ${cy - R - 8} ${P.fx - R} ${cy - R + 10} Z" fill="${c}" stroke="#111827" stroke-width="2"/>
+       <path d="M${P.rx - R - 4} ${cy - 2} Q${P.rx - R} ${cy - R - 10} ${P.rx + 10} ${cy - R - 6}" stroke="#111827" stroke-width="9" fill="none" stroke-linecap="round"/>`
+    : `<path d="M${P.rx - R} ${cy - 4} Q${P.rx - R + 6} ${cy - R - 6} ${P.rx + 8} ${cy - R - 2}" stroke="#111827" stroke-width="${P.fender === 'sport' ? 8 : 5}" fill="none" stroke-linecap="round"/>
+       <path d="M${P.fx - R + 2} ${cy - R + 4} Q${P.fx + 2} ${cy - R - 8} ${P.fx + R} ${cy - 4}" stroke="${two ? '#111827' : c}" stroke-width="${P.fender === 'sport' ? 8 : 5}" fill="none" stroke-linecap="round"/>`;
+  const lights = {
+    one: `<path d="M156 ${52 - L} l14 -3 l1 8 l-14 2 z" fill="#fef9c3" stroke="#111827" stroke-width="2"/><path d="M173 ${50 - L} l16 -6 M173 ${54 - L} l18 0" stroke="#fde68a" stroke-width="2"/>`,
+    big: `<path d="M155 ${50 - L} l18 -4 l2 12 l-18 3 z" fill="#fef9c3" stroke="#111827" stroke-width="2"/><path d="M177 ${48 - L} l20 -8 M177 ${53 - L} l22 0 M177 ${58 - L} l20 7" stroke="#fde68a" stroke-width="2.2"/>`,
+    dual: `<circle cx="162" cy="${48 - L}" r="5" fill="#fef9c3" stroke="#111827" stroke-width="2"/><circle cx="164" cy="${60 - L}" r="5" fill="#fef9c3" stroke="#111827" stroke-width="2"/><path d="M169 ${46 - L} l22 -6 M171 ${59 - L} l22 2" stroke="#fde68a" stroke-width="2.5"/>`,
+    round: `<circle cx="164" cy="${54 - L}" r="9" fill="#fef9c3" stroke="#111827" stroke-width="3"/><circle cx="164" cy="${54 - L}" r="4" fill="#fde047"/><path d="M175 ${50 - L} l20 -6 M175 ${56 - L} l22 2" stroke="#fde68a" stroke-width="2.5"/>`,
+    bar: `<rect x="146" y="${44 - L}" width="30" height="7" rx="3" fill="#e0f2fe" stroke="#111827" stroke-width="2"/><path d="M150 ${47.5 - L} h22" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3 2"/><path d="M178 ${44 - L} l20 -8 M178 ${48 - L} l22 0 M178 ${52 - L} l20 8" stroke="#bae6fd" stroke-width="2.5"/><circle cx="165" cy="${60 - L}" r="6" fill="#fef9c3" stroke="#111827" stroke-width="2"/>`
+  };
+  const [b0, b1] = P.bar;
   return `<svg viewBox="0 0 220 180" class="rider-svg" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="112" cy="172" rx="86" ry="6" fill="rgba(0,0,0,.18)"/>
-    <!-- Kukirin G2 sportive : cadre orange, lignes anguleuses, gros pneus, double suspension -->
+    <ellipse cx="112" cy="172" rx="${86 + (R - 22)}" ry="6" fill="rgba(0,0,0,.18)"/>
     <!-- traits de vitesse -->
     <path d="M4 112 h26 M0 124 h20 M8 100 h16" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="${(0.15 + Z.speed() / 50).toFixed(2)}"/>
-    <!-- tige épaisse inclinée + fourche -->
-    <path d="M164 122 L152 40" stroke="${c}" stroke-width="12" stroke-linecap="round"/>
-    <path d="M161 100 L155 58" stroke="#111827" stroke-width="3" stroke-linecap="round"/>
-    <path d="M164 122 L174 152" stroke="#111827" stroke-width="8" stroke-linecap="round"/>
-    <path d="M163 124 l11 2 M164 130 l11 2 M166 136 l11 2 M168 142 l11 2" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
-    <!-- guidon large relevé + écran -->
-    <path d="M132 40 Q152 34 176 36" stroke="#111827" stroke-width="7" fill="none" stroke-linecap="round"/>
-    <rect x="132" y="35" width="10" height="8" rx="3" fill="${c}"/><rect x="167" y="32" width="10" height="8" rx="3" fill="${c}"/>
-    <rect x="146" y="28" width="18" height="10" rx="2.5" fill="#111827" stroke="${c}" stroke-width="1.5"/>
-    <text x="155" y="36" font-size="7" font-weight="700" text-anchor="middle" fill="#38bdf8" font-family="Arial">${Z.speed()}</text>
-    <!-- phare LED -->
-    <path d="M156 52 l14 -3 l1 8 l-14 2 z" fill="#fef9c3" stroke="#111827" stroke-width="2"/>
-    <path d="M173 50 l16 -6 M173 54 l18 0 M173 58 l16 5" stroke="#fde68a" stroke-width="2" opacity=".9"/>
-    <!-- plateau anguleux type course -->
-    <path d="M30 118 L48 122 L168 120 L180 128 L174 142 L40 144 L26 132 Z" fill="${deck}" stroke="#111827" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M46 128 L170 126 L166 132 L44 134 Z" fill="${band}"/>${two ? `<path d="M128 122 l14 0 l-10 18 l-14 0 z M146 122 l8 0 l-10 18 l-8 0 z" fill="${c}"/>`: ""}
-    <path d="M60 122 l12 0 l-8 18 l-12 0 z M76 122 l8 0 l-8 18 l-8 0 z" fill="#111827" opacity=".85"/>
-    <text x="112" y="142" font-size="7.5" font-weight="700" text-anchor="middle" fill="${label}" font-family="Arial" letter-spacing="1">KUKIRIN G2</text>
-    <!-- aileron arrière -->
-    <path d="M22 118 L44 114 L48 122 L30 124 Z" fill="#111827"/>
-    <!-- bras arrière + amortisseur -->
-    <path d="M58 140 L48 152" stroke="#111827" stroke-width="8" stroke-linecap="round"/>
-    <path d="M70 126 l-12 14" stroke="#fbbf24" stroke-width="4" stroke-linecap="round"/>
-    <!-- garde-boue sport -->
-    <path d="M20 146 Q28 122 58 126" stroke="#111827" stroke-width="6" fill="none" stroke-linecap="round"/>
-    <path d="M150 134 Q178 120 198 146" stroke="${two ? '#111827' : c}" stroke-width="6" fill="none" stroke-linecap="round"/>
-    <!-- gros pneus tout-terrain, jantes orange -->
-    <g class="wheel" style="transform-origin:50px 152px"><circle cx="50" cy="152" r="24" fill="#111827"/><circle cx="50" cy="152" r="24" fill="none" stroke="#4b5563" stroke-width="4" stroke-dasharray="5 3"/><circle cx="50" cy="152" r="12" fill="${c}"/><circle cx="50" cy="152" r="5" fill="#111827"/><path d="M50 141 V163 M39 152 H61" stroke="#111827" stroke-width="2.5"/></g>
-    <g class="wheel" style="transform-origin:172px 152px"><circle cx="172" cy="152" r="24" fill="#111827"/><circle cx="172" cy="152" r="24" fill="none" stroke="#4b5563" stroke-width="4" stroke-dasharray="5 3"/><circle cx="172" cy="152" r="12" fill="${c}"/><circle cx="172" cy="152" r="5" fill="#111827"/><path d="M172 141 V163 M161 152 H183" stroke="#111827" stroke-width="2.5"/></g>
-    ${kid}
+    ${P.glow ? `<ellipse cx="${(A + B) / 2}" cy="${bt + 8}" rx="${(B - A) / 2}" ry="7" fill="#22d3ee" opacity=".6"/>` : ''}
+    ${P.seat ? `<path d="M${A + 30} ${t} L${A + 34} ${t - 28}" stroke="#111827" stroke-width="5"/><path d="M${A + 16} ${t - 30} Q${A + 34} ${t - 38} ${A + 52} ${t - 30} Q${A + 34} ${t - 24} ${A + 16} ${t - 30} Z" fill="#111827"/><path d="M${A + 22} ${t - 31} q12 -4 24 0" stroke="${c}" stroke-width="2" fill="none"/>` : ''}
+    <!-- tige + fourche + suspension avant -->
+    <path d="M${sx} ${sy} L152 ${40 - L}" stroke="${c}" stroke-width="${P.stemW}" stroke-linecap="round"/>
+    ${P.dual ? `<path d="M${sx - 7} ${sy} L146 ${44 - L}" stroke="#111827" stroke-width="4" stroke-linecap="round"/>` : `<path d="M${sx - 3} ${sy - 22} L155 ${58 - L}" stroke="#111827" stroke-width="3" stroke-linecap="round"/>`}
+    ${P.accent ? `<path d="M${sx + 3} ${sy - 10} L${155} ${48 - L}" stroke="${P.accent}" stroke-width="2.5" stroke-linecap="round"/>` : ''}
+    <path d="M${sx} ${sy} L${P.fx} ${cy}" stroke="#111827" stroke-width="${P.springs === 'big' ? 10 : 8}" stroke-linecap="round"/>
+    ${coil(sx + 1, sy + 3, sx + (P.fx - sx) * 0.7, sy + (cy - sy) * 0.7, P.springs === 'big' ? 9 : 7, P.spr, P.springs === 'big' ? 6 : 4.5, P.springs === 'big' ? 3.5 : 2.5)}
+    <!-- guidon -->
+    <path d="M${b0} ${barY + 2} Q152 ${barY - 4} ${b1} ${barY - 2}" stroke="#111827" stroke-width="${P.cross ? 8 : 7}" fill="none" stroke-linecap="round"/>
+    ${P.cross ? `<path d="M${b0 + 10} ${barY - 6} L${b1 - 10} ${barY - 9}" stroke="#111827" stroke-width="3" stroke-linecap="round"/>` : ''}
+    <rect x="${b0}" y="${barY - 3}" width="10" height="8" rx="3" fill="${c}"/><rect x="${b1 - 9}" y="${barY - 6}" width="10" height="8" rx="3" fill="${c}"/>
+    ${P.signals ? `<circle cx="${b0 - 2}" cy="${barY + 1}" r="3.5" fill="#fb923c" stroke="#111827" stroke-width="1.2"/><circle cx="${b1 + 2}" cy="${barY - 2}" r="3.5" fill="#fb923c" stroke="#111827" stroke-width="1.2"/>` : ''}
+    ${P.mirrors ? `<path d="M${b0 + 6} ${barY - 2} L${b0 + 2} ${barY - 14} M${b1 - 6} ${barY - 4} L${b1 - 2} ${barY - 16}" stroke="#111827" stroke-width="2"/><ellipse cx="${b0 + 1}" cy="${barY - 17}" rx="6" ry="4" fill="#94a3b8" stroke="#111827" stroke-width="1.5"/><ellipse cx="${b1 - 1}" cy="${barY - 19}" rx="6" ry="4" fill="#94a3b8" stroke="#111827" stroke-width="1.5"/>` : ''}
+    <rect x="${P.R > 28 ? 144 : 146}" y="${barY - 11}" width="${P.R > 28 ? 22 : 18}" height="10" rx="2.5" fill="#111827" stroke="${c}" stroke-width="1.5"/>
+    <text x="${P.R > 28 ? 155 : 155}" y="${barY - 3}" font-size="7" font-weight="700" text-anchor="middle" fill="#38bdf8" font-family="Arial">${Z.speed()}</text>
+    ${lights[P.light]}
+    <!-- plateau -->
+    <path d="M${A + 4} ${t} L${A + 22} ${t + 4} L${B - 12} ${t + 2} L${B} ${t + 10} L${B - 6} ${bt - 2} L${A + 14} ${bt} L${A} ${t + 14} Z" fill="${deck}" stroke="#111827" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M${A + 20} ${t + 10} L${B - 10} ${t + 8} L${B - 14} ${t + 14} L${A + 18} ${t + 16} Z" fill="${band}"/>
+    ${two ? `<path d="M${B - 50} ${t + 4} l14 0 l-10 ${P.th + 4} l-14 0 z M${B - 32} ${t + 4} l8 0 l-10 ${P.th + 4} l-8 0 z" fill="${c}"/>` : ''}
+    ${P.accent ? `<path d="M${A + 22} ${t + 5} L${B - 14} ${t + 3}" stroke="${P.accent}" stroke-width="3" stroke-linecap="round"/>` : ''}
+    ${P.battery ? `<rect x="${A + 30}" y="${bt - 1}" width="${B - A - 60}" height="${P.R > 28 ? 10 : 7}" rx="3" fill="#374151" stroke="#111827" stroke-width="1.5"/>` : ''}
+    <text x="${(A + B) / 2}" y="${bt - 4}" font-size="${M.id === 'g2' ? 7.5 : 9}" font-weight="700" text-anchor="middle" fill="${label}" font-family="Arial" letter-spacing="1">${M.label}</text>
+    <!-- aileron arrière + bras arrière + suspension arrière -->
+    <path d="M${A - 4} ${t} L${A + 18} ${t - 4} L${A + 22} ${t + 4} L${A + 4} ${t + 6} Z" fill="#111827"/>
+    <path d="M${A + 30} ${bt - 2} L${P.rx} ${cy}" stroke="#111827" stroke-width="${P.springs === 'big' ? 10 : 8}" stroke-linecap="round"/>
+    ${P.springs !== 'front' ? coil(A + 44, t + 6, A + 28, bt + 2, P.springs === 'big' ? 7 : 5, P.spr, P.springs === 'big' ? 5 : 3.5, P.springs === 'big' ? 3.5 : 2.5) : ''}
+    <!-- garde-boue -->
+    ${F}
+    <!-- roues -->
+    ${wheelG(P.rx)}
+    ${wheelG(P.fx)}
+    <g transform="translate(0 ${-L})">${kid}</g>
   </svg>`;
 };
 
@@ -396,14 +469,19 @@ Z.CATS = {
   isis: { name: 'Isis', fur: '#8b7655', mask: '#8b7655', face: '#8b7655', bib: '#f3eee4', paw: '#c98b4e', stripe: '#3b3022', eye: '#86a85c', nose: '#d98c84', blaze: false, ginger: '#b98b54' },
   doudou: { name: 'Doudou', fur: '#9a7a4e', mask: '#9a7a4e', face: '#9a7a4e', bib: '#e6d3ae', paw: '#a8875a', stripe: '#4a3a26', eye: '#b9b552', nose: '#d99a8a', blaze: false, ginger: '#c48a4a' }
 };
+/* clé de rangement des accessoires : 'cat' pour Loulou, 'cat_moezeh', 'cat_doudou', 'cat_isis' */
+Z.catKey = (id) => (!id || id === 'loulou') ? 'cat' : 'cat_' + id;
 Z.art.cat = function ({ acc, mood = 'happy', who } = {}) {
   const id = who || 'loulou';
   const k = Z.CATS[id] || Z.CATS.loulou;
-  const a = id === 'loulou' ? (acc || Z.state.equip.cat) : 'aucun';
+  const a = acc || Z.state.equip[Z.catKey(id)] || 'aucun';
   let extra = '';
   if (a === 'bandana') extra = `<path d="M38 78 L82 78 L60 96 Z" fill="#ef4444"/><circle cx="60" cy="84" r="3" fill="#fff"/>`;
   if (a === 'lunettes') extra = `<rect x="36" y="46" width="20" height="13" rx="5" fill="#111827" stroke="#facc15" stroke-width="2.5"/><rect x="64" y="46" width="20" height="13" rx="5" fill="#111827" stroke="#facc15" stroke-width="2.5"/><path d="M56 52 H64" stroke="#facc15" stroke-width="3"/>`;
   if (a === 'couronne') extra = `<path d="M40 22 L46 8 L53 18 L60 4 L67 18 L74 8 L80 22 Z" fill="#facc15" stroke="#b45309" stroke-width="2"/>`;
+  if (a === 'noeud') extra = `<path d="M47 84 l13 6 l-13 6 z M73 84 l-13 6 l13 6 z" fill="#dc2626" stroke="#7f1d1d" stroke-width="1.2"/><circle cx="60" cy="90" r="3.5" fill="#991b1b"/>`;
+  if (a === 'casquette') extra = `<path d="M36 30 a24 19 0 0 1 48 0 z" fill="#2563eb" stroke="#1e3a8a" stroke-width="2"/><path d="M34 30 h54 q-4 7 -28 6 q-22 0 -26 -6z" fill="#1e40af"/><circle cx="60" cy="13" r="2.5" fill="#1e3a8a"/>`;
+  if (a === 'chapeau') extra = `<path d="M44 22 L48 -2 L72 -2 L76 22 Z" fill="#111827"/><rect x="34" y="20" width="52" height="6" rx="3" fill="#111827"/><rect x="46" y="14" width="28" height="5" fill="#7c3aed"/><path d="M64 4 l2 4 l4 0 l-3 3 l1 4 l-4 -2 l-4 2 l1 -4 l-3 -3 l4 0z" fill="#facc15"/>`;
   if (a === 'casque') extra = `<path d="M34 30 a26 22 0 0 1 52 0 z" fill="${Z.colorOf(Z.state.equip.color)}" stroke="#374151" stroke-width="2"/>`;
   const eye = (x) => `<ellipse cx="${x}" cy="53" rx="6.5" ry="7.5" fill="${k.eye}"/><ellipse cx="${x}" cy="53" rx="2.4" ry="6" fill="#111"/><circle cx="${x + 2}" cy="50" r="1.8" fill="#fff"/>`;
   const eyes = mood === 'think'
@@ -425,7 +503,7 @@ Z.art.cat = function ({ acc, mood = 'happy', who } = {}) {
   const collar = id === 'doudou' ? `<path d="M38 80 Q60 90 82 80" stroke="#ec4899" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="60" cy="88" r="4.5" fill="#facc15" stroke="#b45309" stroke-width="1.2"/>`
     : id === 'isis' ? `<path d="M38 80 Q60 90 82 80" stroke="#9ca3af" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="60" cy="88" r="4" fill="#e5e7eb" stroke="#6b7280" stroke-width="1"/>`
     : id === 'moezeh' ? `<path d="M38 80 Q60 90 82 80" stroke="#2563eb" stroke-width="5" fill="none" stroke-linecap="round"/><rect x="55" y="84" width="10" height="9" rx="2" fill="#facc15" stroke="#b45309" stroke-width="1"/><text x="60" y="91.5" font-size="7" font-weight="700" text-anchor="middle" fill="#7c2d12" font-family="Arial">×</text>` : '';
-  return `<svg viewBox="0 0 120 130" class="cat-svg" xmlns="http://www.w3.org/2000/svg">
+  return `<svg viewBox="0 -4 120 134" class="cat-svg" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="60" cy="124" rx="38" ry="5" fill="rgba(0,0,0,.18)"/>
     <path class="tail" d="M88 112 q30 -6 22 -36" stroke="${k.fur}" stroke-width="10" fill="none" stroke-linecap="round"/>
     ${tailRings}
@@ -452,7 +530,7 @@ Z.loulouSays = function (text, { speak = true, mood, who } = {}) {
   if (speak) Z.speak(text);
   return Z.h('div', { class: 'loulou-says' },
     Z.svg(Z.art.cat({ mood, who: who || Z.narrator }), 'mini-cat'),
-    Z.h('div', { class: 'bubble' }, Z.h('span', null, text), Z.ear(text)));
+    Z.h('div', { class: 'bubble' }, Z.h('span', null, text), Z.ear(text, fv)));
 };
 
 /* ---------- Portraits de la famille (dessinés d'après les photos) ---------- */
@@ -495,10 +573,9 @@ Z.art.face = function (id) {
     let curls = '';
     const pts = [[34, 40], [40, 28], [50, 20], [62, 17], [74, 21], [84, 30], [88, 42], [30, 54], [90, 56], [44, 34], [58, 28], [72, 30], [32, 68], [88, 70]];
     pts.forEach(([x, y], i) => { curls += `<circle cx="${x}" cy="${y}" r="${i > 11 ? 7 : 11}" fill="#2e2522"/>`; });
-    const copper = `<path d="M30 40 q6 -14 16 -14 q4 -10 16 -8" stroke="#b5532c" stroke-width="6" fill="none" stroke-linecap="round"/>
-      <path d="M64 20 q12 -2 18 8 q8 2 9 12" stroke="#c4622f" stroke-width="6" fill="none" stroke-linecap="round"/>
-      `;
-    const fringe = `<path d="M36 50 Q38 34 60 34 Q82 34 84 50 Q76 40 60 42 Q44 40 36 50 Z" fill="#2e2522"/>`;
+    // reflets cuivrés : de petites mèches sur quelques boucles (pas d'arc continu qui ferait un bandeau)
+    const copper = [[44, 22], [66, 13], [82, 24], [32, 36], [90, 40], [56, 22]].map(([x, y]) => `<path d="M${x - 5} ${y + 2} q5 -6 10 0" stroke="#c4622f" stroke-width="3.5" fill="none" stroke-linecap="round"/>`).join('');
+    const fringe = [[38, 38, 8], [47, 31, 9], [58, 28, 10], [70, 29, 10], [80, 35, 8], [86, 43, 6], [34, 46, 6]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#2e2522"/>`).join('');
     const extra = `<circle cx="88" cy="66" r="1.8" fill="#e5e7eb" stroke="#9ca3af" stroke-width=".6"/>
       <path d="M52 112 l8 -9 l-2 7 l8 -1 l-9 11 l2 -7 z" fill="#ef4444"/>
       <circle cx="36" cy="118" r="2" fill="#ef4444"/><circle cx="84" cy="114" r="2" fill="#fff"/><circle cx="90" cy="122" r="1.5" fill="#fff"/>`;
@@ -526,8 +603,11 @@ Z.art.face = function (id) {
 };
 
 /* Un membre de la famille qui encourage (bulle + voix) */
+/* Voix de la famille : Maman naturelle, Charlie et Gabriel avec de grosses voix d'hommes (très graves) */
+Z.FAMILY_VOICE = { cecile: { pitch: 0.95 }, charlie: { pitch: 0.35, rate: 0.88, male: true }, gabriel: { pitch: 0.45, rate: 0.9, male: true } };
 Z.familySays = function (id, text, { speak = true } = {}) {
-  if (speak) Z.speak(text, { pitch: 0.95 });
+  const fv = Z.FAMILY_VOICE[id] || { pitch: 0.95 };
+  if (speak) Z.speak(text, fv);
   return Z.h('div', { class: 'loulou-says' },
     Z.svg(Z.art.face(id), 'mini-cat'),
     Z.h('div', { class: 'bubble' }, Z.h('span', null, text), Z.ear(text)));

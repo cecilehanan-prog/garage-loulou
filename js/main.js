@@ -49,13 +49,13 @@ Z.endScreen = function (shell, { medal, title, eclairs, xp, lines = [], kind, ag
     h('div', { class: 'card center col' },
       h('div', { style: { fontSize: '2em', fontWeight: 700 } }, `+ ${eclairs} ⚡`),
       ...lines.map(l => h('div', null, l))),
-    (() => { const f = Z.pick(ZDATA.family); const t = f.name + ' : ' + Z.pick(ZDATA.cheers); setTimeout(() => Z.speak(t, { pitch: 0.95 }), 3200); return Z.familySays(f.id, t, { speak: false }); })(),
+    (() => { const f = Z.pick(ZDATA.family); const t = f.name + ' : ' + Z.pick(ZDATA.cheers); setTimeout(() => Z.speak(t, Z.FAMILY_VOICE[f.id] || { pitch: 0.95 }), 3200); return Z.familySays(f.id, t, { speak: false }); })(),
     Z.svg(Z.art.rider(), 'end-rider'),
     h('button', { class: 'btn green wide', onclick: () => { Z.sfx.tap(); again(); } }, '🔁 Encore !'),
     h('button', { class: 'btn ghost wide', onclick: () => { Z.sfx.tap(); Z.go('home'); } }, '🏠 Retour au monde'));
   if (leveled) setTimeout(() => {
     Z.sfx.win(); Z.confetti(200);
-    const t = `Niveau ${Z.levelInfo().lvl} ! Tu montes de niveau, champion ! Ta Kukirin roule maintenant à ${Z.speed()} kilomètres heure !`;
+    const t = `Niveau ${Z.levelInfo().lvl} ! Tu montes de niveau, champion ! Ta ${Z.modelOf().name} roule maintenant à ${Z.speed()} kilomètres heure !${(ZDATA.models.find(m => m.lvl === Z.levelInfo().lvl) || null) ? ` Nouveau au garage : la ${ZDATA.models.find(m => m.lvl === Z.levelInfo().lvl).name} !` : ''}`;
     Z.speak(t);
     Z.modal(h('div', { class: 'col center' }, h('div', { class: 'big-reward' }, '⭐'), h('h2', null, t),
       h('button', { class: 'btn gold wide', onclick: (e) => e.target.closest('.modal').remove() }, 'Trop bien !')));
@@ -83,7 +83,7 @@ Z.screens.home = function () {
   const hello = h('div', { class: 'hello' },
     h('h1', null, `Salut ${st.name} ! `),
     h('div', { class: 'lvl' }, h('span', null, `Niveau ${lv.lvl}`), h('div', { class: 'bar' }, h('i', { style: { width: Math.round(lv.cur / lv.need * 100) + '%' } })), h('span', null, '⭐')),
-    h('div', { class: 'speedo' }, '🛴 Ta Kukirin roule à ', h('b', null, `${Z.speed()} km/h`), Z.speed() < 45 ? h('span', { class: 'hint' }, ` · niveau ${lv.lvl + 1} : ${Z.speedOf(lv.lvl + 1)} km/h`) : h('span', { class: 'hint' }, ' · vitesse maximum ! 🔥')));
+    h('div', { class: 'speedo' }, `🛴 Ta ${Z.modelOf().name} roule à `, h('b', null, `${Z.speed()} km/h`), Z.speedOf(lv.lvl) < 45 ? h('span', { class: 'hint' }, ` · niveau ${lv.lvl + 1} : ${Z.speedOf(lv.lvl + 1) + Z.modelOf().bonus} km/h`) : h('span', { class: 'hint' }, ' · vitesse maximum ! 🔥')));
 
   const scene = h('div', { class: 'scene', onclick: () => { Z.sfx.vroum(); Z.speak(`Vroum ! Allez ${st.name}, on y va !`); } },
     h('div', { class: 'sun' }), h('div', { class: 'cloud' }), h('div', { class: 'cloud c2' }),
@@ -170,40 +170,48 @@ function openChest() {
 }
 
 /* ---------- GARAGE (boutique) ---------- */
-Z.screens.garage = function (tab = 'color') {
+Z.screens.garage = function (tab = 'model') {
   const st = Z.state;
   const top = h('div', { class: 'topbar' },
     h('button', { class: 'home-btn', onclick: () => { Z.sfx.tap(); Z.go('home'); } }, '🏠'),
     h('h2', { class: 'grow', style: { margin: 0 } }, '🛠️ Le Garage'),
     h('span', { class: 'chip bolt' }, '⚡ ', String(st.eclairs)));
   const preview = h('div', { class: 'scene', style: { height: '190px' } },
-    h('div', { class: 'ground' }), Z.svg(Z.art.rider(), 'rider'), Z.svg(Z.art.cat(), 'cat'));
+    h('div', { class: 'ground' }), Z.svg(Z.art.rider(), 'rider'), Z.svg(Z.art.cat({ who: tab === 'cat' ? (Z.garageCat || 'loulou') : 'loulou' }), 'cat'));
   const tabs = h('div', { class: 'tabs' },
-    [['color', '🛴 Couleur'], ['helmet', '⛑️ Casque'], ['cat', '🐱 Loulou']].map(([k, l]) =>
+    [['model', '🛴 Modèle'], ['color', '🎨 Couleur'], ['helmet', '⛑️ Casque'], ['cat', '🐱 Chats']].map(([k, l]) =>
       h('button', { class: tab === k ? 'on' : '', onclick: () => { Z.sfx.tap(); Z.go('garage', k); } }, l)));
-  const list = tab === 'color' ? ZDATA.colors : tab === 'helmet' ? ZDATA.helmets : ZDATA.catItems;
+  const lvl = Z.levelInfo().lvl;
+  const who = Z.garageCat || 'loulou', key = tab === 'cat' ? Z.catKey(who) : tab;
+  if (!st.owned[key]) st.owned[key] = ['aucun'];
+  if (!st.equip[key]) st.equip[key] = 'aucun';
+  const catPick = tab === 'cat' ? h('div', { class: 'tabs cat-pick' }, ['loulou', 'moezeh', 'doudou', 'isis'].map(c =>
+    h('button', { class: who === c ? 'on' : '', onclick: () => { Z.sfx.tap(); Z.garageCat = c; Z.go('garage', 'cat'); } }, Z.svg(Z.art.cat({ who: c }), 'pick-cat'), Z.CATS[c].name))) : null;
+  const list = tab === 'model' ? ZDATA.models : tab === 'color' ? ZDATA.colors : tab === 'helmet' ? ZDATA.helmets : ZDATA.catItems;
   const grid = h('div', { class: 'shop-grid' }, list.map(it => {
-    const owned = st.owned[tab].includes(it.id), on = st.equip[tab] === it.id;
+    const owned = st.owned[key].includes(it.id), on = st.equip[key] === it.id;
     let vis;
-    if (tab === 'color') vis = h('div', { class: 'sw', style: { background: it.two ? `linear-gradient(135deg, ${it.c} 50%, #111827 50%)` : it.c } });
-    else if (tab === 'helmet') vis = h('div', { class: 'sw', style: { background: it.c, borderRadius: '50% 50% 8px 8px' } });
-    else vis = Z.svg(Z.art.cat({ acc: it.id }), 'shop-cat');
+    if (tab === 'model') vis = Z.svg(Z.art.rider({ model: it.id, rider: false }), 'shop-scoot');
+    else if (tab === 'color') vis = h('div', { class: 'sw', style: { background: it.two ? `linear-gradient(135deg, ${it.c} 50%, #111827 50%)` : it.c } });
+    else if (tab === 'helmet') vis = Z.svg(Z.art.rider({ helmet: it.id }).replace('viewBox="0 0 220 180"', 'viewBox="86 0 52 60"'), 'shop-helmet');
+    else vis = Z.svg(Z.art.cat({ acc: it.id, who }), 'shop-cat');
     return h('button', {
       class: 'item' + (on ? ' on' : '') + (owned ? '' : ' locked'),
       onclick: () => {
-        if (owned) { st.equip[tab] = it.id; Z.save(); Z.sfx.good(); Z.go('garage', tab); return; }
+        if (owned) { st.equip[key] = it.id; Z.save(); Z.sfx.good(); Z.go('garage', tab); return; }
+        if (it.lvl && lvl < it.lvl) { Z.sfx.bad(); Z.speak(`La ${it.name} se débloque au niveau ${it.lvl}. Tu es au niveau ${lvl}. Continue, champion !`); Z.pop(`🔒 Niveau ${it.lvl}`, 'soft'); return; }
         if (st.eclairs < it.price) { Z.sfx.bad(); const m = `Il te faut ${it.price} éclairs. Tu en as ${st.eclairs}. Joue encore un peu !`; Z.speak(m); Z.pop(`Il manque ${it.price - st.eclairs} ⚡`, 'soft'); return; }
-        st.eclairs -= it.price; st.owned[tab].push(it.id); st.equip[tab] = it.id; Z.save();
+        st.eclairs -= it.price; st.owned[key].push(it.id); st.equip[key] = it.id; Z.save();
         Z.sfx.coin(); Z.sfx.win(); Z.confetti(); Z.speak(`Super ! ${it.name} !`);
         Z.go('garage', tab);
       }
-    }, vis, h('div', null, it.name), owned ? h('div', { class: 'price' }, on ? '✅ Choisi' : 'À toi') : h('div', { class: 'price' }, `${it.price} ⚡`));
+    }, vis, h('div', null, tab === 'cat' && it.id === 'aucun' ? `${Z.CATS[who].name} tout simple` : it.name), tab === 'model' && it.bonus ? h('div', { class: 'small-note' }, `+${it.bonus} km/h`) : null, owned ? h('div', { class: 'price' }, on ? '✅ Choisi' : 'À toi') : h('div', { class: 'price' }, it.lvl && lvl < it.lvl ? `🔒 Niveau ${it.lvl}` : `${it.price} ⚡`));
   }));
   const nav = h('div', { class: 'nav' },
     h('button', { onclick: () => { Z.sfx.tap(); Z.go('home'); } }, h('span', null, '🏠'), 'Monde'),
     h('button', { class: 'on' }, h('span', null, '🛠️'), 'Garage'),
     h('button', { onclick: () => { Z.sfx.tap(); Z.go('album'); } }, h('span', null, '📒'), 'Album'));
-  app.append(top, h('div', { class: 'screen' }, preview, tabs, grid), nav);
+  app.append(top, h('div', { class: 'screen' }, preview, tabs, catPick, grid), nav);
 };
 
 /* ---------- ALBUM ---------- */

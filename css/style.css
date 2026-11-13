@@ -370,3 +370,13 @@ button { font-family: inherit; color: inherit; letter-spacing: inherit; cursor: 
 .sign.prio { width: 52px; height: 52px; transform: rotate(45deg); background: #fff; border: 2px solid #111; margin: 10px; }
 .sign.prio::after { display: none; }
 .sign.prio i { width: 30px; height: 30px; background: #facc15; border: 2px solid #111; }
+
+/* Garage : aperçu des modèles de trottinette */
+.shop-scoot { width: 100%; max-width: 130px; height: auto; display: block; margin: 0 auto 4px; }
+.item .small-note { margin: 0; color: var(--orange); font-weight: 700; }
+
+/* Garage : casques (vue de la tête) et choix du chat à décorer */
+.shop-helmet { width: 70px; height: 70px; margin: 0 auto 4px; }
+.shop-helmet svg { width: 100%; height: 100%; }
+.cat-pick button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; }
+.pick-cat { width: 42px; }
