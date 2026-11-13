@@ -530,7 +530,7 @@ Z.loulouSays = function (text, { speak = true, mood, who } = {}) {
   if (speak) Z.speak(text);
   return Z.h('div', { class: 'loulou-says' },
     Z.svg(Z.art.cat({ mood, who: who || Z.narrator }), 'mini-cat'),
-    Z.h('div', { class: 'bubble' }, Z.h('span', null, text), Z.ear(text, fv)));
+    Z.h('div', { class: 'bubble' }, Z.h('span', null, text), Z.ear(text)));
 };
 
 /* ---------- Portraits de la famille (dessinés d'après les photos) ---------- */
@@ -610,5 +610,5 @@ Z.familySays = function (id, text, { speak = true } = {}) {
   if (speak) Z.speak(text, fv);
   return Z.h('div', { class: 'loulou-says' },
     Z.svg(Z.art.face(id), 'mini-cat'),
-    Z.h('div', { class: 'bubble' }, Z.h('span', null, text), Z.ear(text)));
+    Z.h('div', { class: 'bubble' }, Z.h('span', null, text), Z.ear(text, fv)));
 };
