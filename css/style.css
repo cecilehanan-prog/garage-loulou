@@ -380,3 +380,9 @@ button { font-family: inherit; color: inherit; letter-spacing: inherit; cursor: 
 .shop-helmet svg { width: 100%; height: 100%; }
 .cat-pick button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; }
 .pick-cat { width: 42px; }
+
+/* Tables : après 2 erreurs, la bonne réponse clignote doucement */
+.choice.hint-good { border-color: #16a34a; box-shadow: 0 0 0 4px #bbf7d0; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.06); } }
+.tip { font-weight: 700; background: #fef9c3; border-radius: 12px; padding: 8px 12px; margin-top: 8px; }
+.question.q2 { font-size: 1.5em; opacity: .75; }

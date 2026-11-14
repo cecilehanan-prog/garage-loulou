@@ -1,10 +1,12 @@
 /* =========================================================
    JEU 2 — GRAND PRIX DES TABLES (×6 ×7 ×8 ×9)
    ---------------------------------------------------------
-   • Chaque NOUVEAU résultat est d'abord montré (points + astuce) avant
-     d'être demandé : on apprend sans échec.
-   • Astuces "faits dérivés" (6×7 = 5×7 + 7 ; 9×n = 10×n − n) : la mémoire
-     des faits est fragile chez les dyslexiques, la stratégie la soutient.
+   • Chaque table est posée dans les deux sens (« 6 fois 4, 4 fois 6 ») et,
+     quand c'est juste, la voix confirme : « Bravo ! 6 fois 4, 4 fois 6, 24 ! »
+   • Chaque NOUVEAU résultat est d'abord montré et dit
+     avant d'être demandé : on apprend sans échec.
+   • Demande de Maman : JUSTE les tables. Seules les astuces très simples
+     restent (×10, ×9, ×5 finit par 0 ou 5, ×2 double, ×3 somme des chiffres) ; les autres viendront plus tard.
    • Récupération active + répétition espacée par résultat.
    • Pas de chrono qui punit : la course se gagne TOUJOURS (10 bonnes
      réponses). Les erreurs reviennent 2 et 5 questions plus tard.
@@ -47,28 +49,28 @@
     return q;
   }
 
-  function strategy(a, b) {
-    const x = Math.max(a, b), y = Math.min(a, b), r = a * b;
-    const has = (n) => a === n || b === n, other = (n) => a === n ? b : a;
-    if (has(10)) { const n = other(10); return { t: `Fois 10, facile : on ajoute un zéro ! ${n} devient ${n * 10}.`, rows: n, cols: 10, split: 0 }; }
-    if (has(2)) { const n = other(2); return { t: `Fois 2, c'est le double : ${n} plus ${n} égale ${r}.`, rows: 2, cols: n, split: 1 }; }
-    if (has(5)) { const n = other(5); return { t: `Fois 5, c'est la moitié de fois 10. ${n} fois 10 égale ${n * 10}, la moitié c'est ${r}.`, rows: 5, cols: n, split: 0 }; }
-    if (has(9)) { const n = other(9); return { t: `Astuce du 9 : ${n} fois 10 égale ${n * 10}, puis on enlève ${n}. ${n * 10} moins ${n} égale ${r}.`, rows: 9, cols: n, split: 0, nine: true }; }
-    if (x === 8 && y === 7) return { t: `Formule magique : 5, 6, 7, 8 ! 56 égale 7 fois 8.`, rows: 7, cols: 8, split: 5 };
-    if (x === 7 && y === 7) return { t: `7 fois 7 égale 49. C'est 5 fois 7, 35, plus 2 fois 7, 14. 35 plus 14 égale 49.`, rows: 7, cols: 7, split: 5 };
-    if (has(6)) { const n = other(6); return { t: `Astuce du 6 : 5 fois ${n} égale ${5 * n}, et on ajoute encore ${n}. ${5 * n} plus ${n} égale ${r}.`, rows: 6, cols: n, split: 5 }; }
-    if (has(4)) { const n = other(4); return { t: `Fois 4, c'est le double du double : ${n}, puis ${2 * n}, puis ${r}.`, rows: 4, cols: n, split: 2 }; }
-    if (has(8)) { const n = other(8); return { t: `Fois 8, c'est le double de fois 4. 4 fois ${n} égale ${4 * n}, le double c'est ${r}.`, rows: 8, cols: n, split: 4 }; }
-    if (has(3)) { const n = other(3); return { t: `Fois 3 : ${n} plus ${n} plus ${n} égale ${r}.`, rows: 3, cols: n, split: 0 }; }
-    return { t: `${a} fois ${b} égale ${r}.`, rows: a, cols: b, split: 0 };
+  /* Astuces gardées : seulement les plus simples pour un CM1 */
+  function simpleTip(a, b) {
+    const r = a * b, other = (n) => a === n ? b : a;
+    if (a === 10 || b === 10) { const n = other(10); return `Fois 10 : on ajoute un zéro. ${n} devient ${r}.`; }
+    if (a === 9 || b === 9) { const n = other(9); return `Astuce du 9 : ${n} fois 10 égale ${n * 10}, on enlève ${n}, ça fait ${r}.`; }
+    if (a === 5 || b === 5) return `Dans la table du 5, les résultats finissent toujours par 0 ou par 5. ${r} finit par ${r % 10}.`;
+    if (a === 2 || b === 2) { const n = other(2); return `Fois 2, c'est le double : ${n} plus ${n} égale ${r}.`; }
+    if (a === 3 || b === 3) {
+      if (r < 10) return `Dans la table du 3, les résultats sont 3, 6, 9, 12, 15… ${r} en fait partie.`;
+      const d = String(r).split('').map(Number), sum = d[0] + d[1];
+      return `Dans la table du 3, on additionne les chiffres du résultat : ${d[0]} plus ${d[1]} égale ${sum}, et ${sum} est dans la table du 3.`;
+    }
+    return null;
   }
 
-  function dotGrid(s) {
-    const g = h('div', { class: 'dotgrid', style: { gridTemplateColumns: `repeat(${s.cols}, 18px)` } });
-    for (let r = 0; r < s.rows; r++) for (let c = 0; c < s.cols; c++)
-      g.appendChild(h('i', { class: s.split && r >= s.split ? 'b' : '' }));
-    return g;
-  }
+  /* Demande de Maman : la table dans les DEUX sens (6 × 4 et 4 × 6, même résultat).
+     dit()  = ce que la voix dit : « 6 fois 4, 4 fois 6 »
+     vu()   = ce qu'on voit : 6 × 4 et 4 × 6, l'un sous l'autre */
+  const dit = (a, b) => a === b ? `${a} fois ${b}` : `${a} fois ${b}, ${b} fois ${a}`;
+  const vu = (a, b, res) => h('div', { class: 'col center', style: { gap: '2px' } },
+    h('div', { class: 'question' }, `${a} × ${b}${res !== undefined ? ' = ' + res : ''}`),
+    a === b ? null : h('div', { class: 'question q2' }, `${b} × ${a}${res !== undefined ? ' = ' + res : ''}`));
 
   function choicesFor(a, b) {
     const r = a * b, set = new Set();
@@ -111,14 +113,14 @@
 
     const teach = (a, b, item, next) => {
       shell.clear(); shell.setSteps(GOAL, correct);
-      const s = strategy(a, b);
-      const t = `Nouveau résultat ! ${a} fois ${b}. ${s.t}`;
+      const tip = simpleTip(a, b);
+      const t = `Nouveau résultat ! ${dit(a, b)}, ${a * b}.` + (tip ? ' ' + tip : '');
       shell.root.append(track,
         h('h2', null, '✨ Nouveau résultat à apprendre'),
         h('div', { class: 'card center col' },
-          h('div', { class: 'question' }, `${a} × ${b} = ${a * b}`),
-          dotGrid(s),
-          h('div', { class: 'row' }, h('span', { class: 'grow' }, s.t), Z.ear(t))),
+          h('div', { class: 'row', style: { justifyContent: 'center' } },
+            vu(a, b, a * b), Z.ear(`${dit(a, b)}, ${a * b}`)),
+          tip ? h('div', { class: 'tip' }, '💡 ', tip) : null),
         h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.tap(); item.isNew = false; next(); } }, 'Je l\'ai retenu ! ➡️'));
       moveMe();
       Z.speak(t);
@@ -129,7 +131,7 @@
       const r = a * b, t0 = Date.now();
       let tries = 0;
       const turbo = h('div', { class: 'streak-turbo' }, streak >= 3 ? `🔥 TURBO × ${streak} !` : '');
-      const qText = `${a} fois ${b} ?`;
+      const qText = `${dit(a, b)} ?`;
       const grid = h('div', { class: 'choices' });
       choicesFor(a, b).forEach(v => {
         const btn = h('button', {
@@ -145,8 +147,8 @@
               correct++;
               if (streak >= 3 && fast) { bonus++; Z.pop('🔥 Turbo +1 ⚡', 'gold'); } else Z.pop('✓', '');
               moveMe(); Z.sfx.vroum();
-              Z.speak(`${a} fois ${b}, ${r} !`);
-              setTimeout(ask, 1100);
+              // on entend la table entière dans les deux sens (« Bravo ! 6 fois 4, 4 fois 6, 24 ! ») avant la suivante
+              Z.speak(`Bravo ! ${dit(a, b)}, ${r} !`).then(() => setTimeout(ask, 500));
             } else {
               errors++; streak = 0;
               if (!(item.k in firstTry)) firstTry[item.k] = false;
@@ -154,27 +156,32 @@
               // la même question reviendra un peu plus tard
               queue.splice(Math.min(2, queue.length), 0, { k: item.k });
               queue.splice(Math.min(5, queue.length), 0, { k: item.k });
-              help(a, b, grid);
+              help(a, b, r, grid, tries);
             }
           }
         }, String(v));
         grid.appendChild(btn);
       });
       shell.root.append(track, turbo,
-        h('div', { class: 'card center' }, h('div', { class: 'row', style: { justifyContent: 'center' } }, h('div', { class: 'question' }, `${a} × ${b}`), Z.ear(qText))),
+        h('div', { class: 'card center' }, h('div', { class: 'row', style: { justifyContent: 'center' } }, vu(a, b), Z.ear(qText))),
         grid, h('div', { id: 'help' }));
       moveMe();
       Z.speak(qText);
     };
 
-    const help = (a, b, grid) => {
+    const help = (a, b, r, grid, tries) => {
       const box = document.getElementById('help');
-      const s = strategy(a, b);
       box.innerHTML = '';
-      box.appendChild(h('div', { class: 'card col center' },
-        h('div', { style: { fontWeight: 700 } }, '💡 Astuce de Moezeh'),
-        dotGrid(s), h('div', { class: 'row' }, h('span', { class: 'grow' }, s.t), Z.ear(s.t))));
-      Z.speak(`Pas grave ! ${s.t}`);
+      if (tries < 2) {
+        const tip = simpleTip(a, b);
+        if (tip) box.appendChild(h('div', { class: 'card tip' }, '💡 ', tip, ' ', Z.ear(tip)));
+        Z.speak(`Pas grave, essaie encore. ${tip || ''} ${dit(a, b)} ?`); return;
+      }
+      // 2e erreur : on montre simplement la table, sans explication
+      [...grid.children].forEach(btn => { if (Number(btn.textContent) === r) btn.classList.add('hint-good'); });
+      box.appendChild(h('div', { class: 'card center' }, h('div', { class: 'row', style: { justifyContent: 'center' } },
+        vu(a, b, r), Z.ear(`${dit(a, b)}, ${r}`))));
+      Z.speak(`${dit(a, b)}, ${r}. Appuie sur ${r}.`);
     };
 
     const finish = () => {
