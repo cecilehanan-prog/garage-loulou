@@ -1,5 +1,5 @@
 /* Fonctionne sans internet après la première ouverture */
-const CACHE = 'zouzou-v16';
+const CACHE = 'zouzou-v17';
 const SHELL = ['./', './index.html', './css/style.css', './js/data.js', './js/core.js',
   './js/game-mots.js', './js/game-tables.js', './js/game-problemes.js', './js/game-route.js', './js/main.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];

@@ -603,8 +603,8 @@ Z.art.face = function (id) {
 };
 
 /* Un membre de la famille qui encourage (bulle + voix) */
-/* Voix de la famille : Maman naturelle, Charlie et Gabriel avec de grosses voix d'hommes (très graves) */
-Z.FAMILY_VOICE = { cecile: { pitch: 0.95 }, charlie: { pitch: 0.35, rate: 0.88, male: true }, gabriel: { pitch: 0.45, rate: 0.9, male: true } };
+/* Voix de la famille : Maman naturelle, Charlie et Gabriel avec des voix d'hommes (graves sans excès ; Gabriel, plus jeune, un peu moins grave) */
+Z.FAMILY_VOICE = { cecile: { pitch: 0.95 }, charlie: { pitch: 0.72, rate: 0.95, male: true }, gabriel: { pitch: 0.82, rate: 0.98, male: true } };
 Z.familySays = function (id, text, { speak = true } = {}) {
   const fv = Z.FAMILY_VOICE[id] || { pitch: 0.95 };
   if (speak) Z.speak(text, fv);
