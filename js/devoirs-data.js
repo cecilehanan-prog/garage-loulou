@@ -12,9 +12,14 @@
                 s?: / v?: = mot accepté en plus, mais pas obligatoire.
    • mathador : nombres à combiner pour s'approcher de la cible.
    • poesie   : texte tapé par Maman (espace « Pour Maman » de l'exercice).
+
+   NOUVELLE SEMAINE : on DÉPLACE l'objet ci-dessous dans js/devoirs-archives.js
+   (il devient un « ancien devoir », toujours jouable pour réviser), on en
+   garde aussi une copie dans le dossier « archives-devoirs » de l'ordi,
+   puis on écrit ici les nouveaux devoirs avec un nouvel id (la date du lundi).
    ========================================================= */
 window.ZDEVOIRS = {
-  id: '2026-11-16',
+  id: '2026-11-16', titre: 'Semaine du 16 novembre',
   items: [
     {
       id: 'poesie', type: 'poesie', pour: 'Lundi 16',

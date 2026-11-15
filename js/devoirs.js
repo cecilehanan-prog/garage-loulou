@@ -12,49 +12,96 @@
    ========================================================= */
 (function () {
   const h = Z.h;
-  const D = () => window.ZDEVOIRS;
+  /* La semaine affichée : celle en cours (ZDEVOIRS) ou une semaine archivée (ZARCHIVES) */
+  let week = null;
+  const D = () => week || window.ZDEVOIRS;
+  const archives = () => (window.ZARCHIVES || []).slice().sort((a, b) => b.id.localeCompare(a.id));
+  const isOld = () => D() !== window.ZDEVOIRS;
+  const findWeek = (wid) => (wid && archives().find(w => w.id === wid)) || window.ZDEVOIRS;
   /* une seule récitation à la fois : on coupe le micro en changeant d'écran */
   let stopRecite = null;
   const killRecite = () => { if (stopRecite) { const f = stopRecite; stopRecite = null; f(); } };
 
-  /* Progression : remise à zéro quand les devoirs changent */
-  function store() {
+  /* Progression rangée PAR SEMAINE : rien n'est effacé quand les devoirs changent */
+  function storeOf(wid) {
     const st = Z.state;
-    if (!st.devoirs || st.devoirs.id !== D().id) st.devoirs = { id: D().id, done: {}, res: {} };
-    return st.devoirs;
+    st.devoirsAll = st.devoirsAll || {};
+    if (st.devoirs && st.devoirs.id) { st.devoirsAll[st.devoirs.id] = st.devoirsAll[st.devoirs.id] || { done: st.devoirs.done, res: st.devoirs.res }; delete st.devoirs; }
+    return st.devoirsAll[wid] = st.devoirsAll[wid] || { done: {}, res: {} };
   }
+  const store = () => storeOf(D().id);
+  /* Poésies rangées par titre (une nouvelle poésie n'efface pas l'ancienne) */
+  function poemOf(titre) {
+    const st = Z.state;
+    st.poemes = st.poemes || {};
+    if (st.poeme && st.poeme.titre) { st.poemes[st.poeme.titre] = st.poemes[st.poeme.titre] || st.poeme; delete st.poeme; }
+    return st.poemes[titre] || null;
+  }
+  Z.devoirsLeft = () => { const s = storeOf(window.ZDEVOIRS.id); return window.ZDEVOIRS.items.filter(i => !s.done[i.id]).length; };
   const say = (t) => Z.speak(t, { natural: true });
-  const back = () => { Z.sfx.tap(); Z.go('devoirs'); };
+  const back = () => { Z.sfx.tap(); Z.go('devoirs', isOld() ? D().id : undefined); };
 
   function reward(shell, it, eclairs, lines) {
     const s = store(); s.done[it.id] = true; Z.save();
-    Z.endScreen(shell, { medal: '📚', title: 'Exercice terminé !', eclairs, xp: eclairs, lines, kind: 'devoirs', detail: it.id, again: back, againLabel: '📚 Mes devoirs' });
+    /* révision d'un ancien devoir : moitié moins d'éclairs (la semaine en cours reste la priorité) */
+    if (isOld()) { eclairs = Math.max(5, Math.round(eclairs / 2)); lines = ['📦 Révision', ...lines]; }
+    Z.endScreen(shell, { medal: '📚', title: isOld() ? 'Révision terminée !' : 'Exercice terminé !', eclairs, xp: eclairs, lines, kind: 'devoirs', detail: D().id + ':' + it.id, again: back, againLabel: '📚 Mes devoirs' });
   }
 
+  const ICO = { verbes: '✏️', sujet: '🟥', mathador: '🔢', poesie: '📜' };
+  const itemBtn = (it, s, wid) => h('button', { class: 'devoir' + (s.done[it.id] ? ' fait' : ''), onclick: () => { Z.sfx.vroum(); Z.go('devoir', it.id, wid); } },
+    h('span', { class: 'd-ico' }, s.done[it.id] ? '✅' : ICO[it.type]),
+    h('span', { class: 'grow' }, it.titre, h('small', null, it.pour)),
+    h('span', { class: 'd-go' }, '▶'));
+
   /* ---------- LISTE ---------- */
-  Z.screens.devoirs = function () {
+  Z.screens.devoirs = function (wid) {
     killRecite();
+    week = findWeek(wid);
     const s = store();
     const shell = Z.shell({ title: 'Mes devoirs' });
     shell.setSteps(0, 0);
     const items = D().items;
+    if (isOld()) {
+      const t = `${D().titre}. Tu peux refaire ces devoirs pour réviser !`;
+      shell.root.append(h('h2', null, '📦 ' + D().titre), Z.loulouSays(t),
+        ...items.map(it => itemBtn(it, s, D().id)),
+        h('button', { class: 'btn ghost wide', onclick: printSheet }, '🖨️ Réimprimer la feuille'),
+        h('button', { class: 'btn ghost wide', onclick: () => { Z.sfx.tap(); Z.go('archives'); } }, '⬅️ Les autres semaines'));
+      return;
+    }
     const left = items.filter(i => !s.done[i.id]).length;
-    const hello = s.franklin ? '' : 'Moi c’est Franklin, la tortue. Je t’aide pour tes devoirs : doucement, mais sûrement ! ';
-    if (!s.franklin) { s.franklin = true; Z.save(); }
+    const hello = Z.state.franklinMet ? '' : 'Moi c’est Franklin, la tortue. Je t’aide pour tes devoirs : doucement, mais sûrement ! ';
+    if (!Z.state.franklinMet) { Z.state.franklinMet = true; Z.save(); }
     const t = left ? `Salut ${Z.state.name} ! ${hello}Voici tes devoirs. Il en reste ${left}. Choisis par où tu commences !` : `${hello}Bravo ${Z.state.name}, tous tes devoirs sont faits ! Tu peux imprimer la feuille pour la maîtresse.`;
-    const ICO = { verbes: '✏️', sujet: '🟥', mathador: '🔢', poesie: '📜' };
     shell.root.append(
       h('h2', null, '📚 Mes devoirs'),
       Z.loulouSays(t),
-      ...items.map(it => h('button', { class: 'devoir' + (s.done[it.id] ? ' fait' : ''), onclick: () => { Z.sfx.vroum(); Z.go('devoir', it.id); } },
-        h('span', { class: 'd-ico' }, s.done[it.id] ? '✅' : ICO[it.type]),
-        h('span', { class: 'grow' }, it.titre, h('small', null, it.pour)),
-        h('span', { class: 'd-go' }, '▶'))),
-      h('button', { class: 'btn ghost wide', onclick: printSheet }, '🖨️ Imprimer pour la maîtresse'));
+      ...items.map(it => itemBtn(it, s)),
+      h('button', { class: 'btn ghost wide', onclick: printSheet }, '🖨️ Imprimer pour la maîtresse'),
+      archives().length ? h('button', { class: 'btn purple wide', onclick: () => { Z.sfx.tap(); Z.go('archives'); } }, `📦 Mes anciens devoirs (${archives().length})`) : null);
   };
 
-  Z.screens.devoir = function (id) {
+  /* ---------- ANCIENS DEVOIRS ---------- */
+  Z.screens.archives = function () {
     killRecite();
+    const shell = Z.shell({ title: 'Anciens devoirs' });
+    shell.setSteps(0, 0);
+    const t = 'Voici tes anciens devoirs. Tu peux les refaire pour réviser, par exemple avant une évaluation !';
+    shell.root.append(h('h2', null, '📦 Mes anciens devoirs'), Z.loulouSays(t),
+      ...archives().map(w => {
+        const s = storeOf(w.id), done = w.items.filter(i => s.done[i.id]).length;
+        return h('button', { class: 'devoir', onclick: () => { Z.sfx.vroum(); Z.go('devoirs', w.id); } },
+          h('span', { class: 'd-ico' }, '📦'),
+          h('span', { class: 'grow' }, w.titre, h('small', null, w.items.map(i => ICO[i.type]).join(' ') + ` · ${done}/${w.items.length} faits`)),
+          h('span', { class: 'd-go' }, '▶'));
+      }),
+      h('button', { class: 'btn ghost wide', onclick: () => { Z.sfx.tap(); Z.go('devoirs'); } }, '📚 Les devoirs de la semaine'));
+  };
+
+  Z.screens.devoir = function (id, wid) {
+    killRecite();
+    week = findWeek(wid);
     const it = D().items.find(i => i.id === id);
     const shell = Z.shell({ title: it.titre });
     ({ verbes, sujet, mathador, poesie })[it.type](shell, it);
@@ -279,8 +326,8 @@
   const same = (a, b) => a === b || (b.length >= 4 && lev(a, b) <= 1) || (b.length >= 7 && lev(a, b) <= 2);
 
   function poemLines(it) {
-    const p = Z.state.poeme || {};
-    if (!p.texte || p.titre !== it.titre) return null;
+    const p = poemOf(it.titre) || {};
+    if (!p.texte) return null;
     let lines = p.texte.split('\n').map(l => l.trim());
     while (lines.length && !lines[lines.length - 1]) lines.pop();
     if (p.part === '23') {
@@ -456,7 +503,7 @@
   /* Maman colle le texte de la poésie (une seule fois) */
   function poemSetup(shell, it) {
     shell.clear();
-    const p = Z.state.poeme && Z.state.poeme.titre === it.titre ? Z.state.poeme : {};
+    const p = poemOf(it.titre) || {};
     const ta = h('textarea', { rows: 12, placeholder: 'Un vers par ligne.\nUne ligne vide entre deux strophes.' });
     ta.value = p.texte || '';
     const part = h('select', null, h('option', { value: 'tout' }, 'En entier'), h('option', { value: '23' }, 'Les 2 premiers tiers'));
@@ -468,7 +515,7 @@
       h('label', null, 'À apprendre'), part,
       h('button', { class: 'btn green wide', onclick: () => {
         if (ta.value.trim().split('\n').filter(l => l.trim()).length < 2) { alert('Il faut au moins 2 vers.'); return; }
-        Z.state.poeme = { titre: it.titre, texte: ta.value, part: part.value }; Z.save(); Z.go('devoir', it.id);
+        poemOf(it.titre); Z.state.poemes[it.titre] = { titre: it.titre, texte: ta.value, part: part.value }; Z.save(); Z.go('devoir', it.id, isOld() ? D().id : undefined);
       } }, '💾 Enregistrer'),
       h('button', { class: 'btn ghost wide', onclick: back }, 'Annuler')));
   }

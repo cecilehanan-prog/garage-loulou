@@ -11,7 +11,7 @@ Z.go = function (name, ...args) {
   window.scrollTo(0, 0);
   Z.current = name;
   Z.applySpeed();
-  Z.narrator = { mots: 'doudou', tables: 'moezeh', problemes: 'isis', devoirs: 'franklin', devoir: 'franklin' }[name] || 'loulou';
+  Z.narrator = { mots: 'doudou', tables: 'moezeh', problemes: 'isis', devoirs: 'franklin', devoir: 'franklin', archives: 'franklin' }[name] || 'loulou';
   Z.screens[name](...args);
 };
 
@@ -107,7 +107,7 @@ Z.screens.home = function () {
     world('w2', 'moezeh', 'Grand Prix des Tables', 'Avec Moezeh : les tables de 1 à 11', 'tables'),
     world('w3', 'isis', 'Détective Isis', 'Résous les problèmes comme un pro', 'problemes'),
     world('w4', 'loulou', 'Le Permis Trottinette', 'Avec Loulou : la route, le marché…', 'route'),
-    (() => { const D = window.ZDEVOIRS, s = Z.state.devoirs && Z.state.devoirs.id === D.id ? Z.state.devoirs.done : {}; const n = D.items.filter(i => !s[i.id]).length;
+    (() => { const n = Z.devoirsLeft();
       return world('w5', 'franklin', 'Mes devoirs', 'Avec Franklin : les devoirs de l’agenda', 'devoirs', n ? `${n} à faire` : '✅'); })());
 
   const nav = h('div', { class: 'nav' },
