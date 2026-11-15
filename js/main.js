@@ -11,7 +11,7 @@ Z.go = function (name, ...args) {
   window.scrollTo(0, 0);
   Z.current = name;
   Z.applySpeed();
-  Z.narrator = { mots: 'doudou', tables: 'moezeh', problemes: 'isis' }[name] || 'loulou';
+  Z.narrator = { mots: 'doudou', tables: 'moezeh', problemes: 'isis', devoirs: 'franklin', devoir: 'franklin' }[name] || 'loulou';
   Z.screens[name](...args);
 };
 
@@ -36,7 +36,7 @@ Z.shell = function ({ title }) {
 };
 
 /* Écran de fin de jeu, commun aux 3 jeux */
-Z.endScreen = function (shell, { medal, title, eclairs, xp, lines = [], kind, again, detail }) {
+Z.endScreen = function (shell, { medal, title, eclairs, xp, lines = [], kind, again, detail, againLabel = '🔁 Encore !' }) {
   const leveled = Z.finishGame(kind, eclairs, xp, detail);
   shell.clear();
   shell.setSteps(0, 0);
@@ -51,7 +51,7 @@ Z.endScreen = function (shell, { medal, title, eclairs, xp, lines = [], kind, ag
       ...lines.map(l => h('div', null, l))),
     (() => { const f = Z.pick(ZDATA.family); const t = f.name + ' : ' + Z.pick(ZDATA.cheers); setTimeout(() => Z.speak(t, Z.FAMILY_VOICE[f.id] || { pitch: 0.95 }), 3200); return Z.familySays(f.id, t, { speak: false }); })(),
     Z.svg(Z.art.rider(), 'end-rider'),
-    h('button', { class: 'btn green wide', onclick: () => { Z.sfx.tap(); again(); } }, '🔁 Encore !'),
+    h('button', { class: 'btn green wide', onclick: () => { Z.sfx.tap(); again(); } }, againLabel),
     h('button', { class: 'btn ghost wide', onclick: () => { Z.sfx.tap(); Z.go('home'); } }, '🏠 Retour au monde'));
   if (leveled) setTimeout(() => {
     Z.sfx.win(); Z.confetti(200);
@@ -104,9 +104,11 @@ Z.screens.home = function () {
 
   const worlds = h('div', { class: 'worlds' },
     world('w1', 'doudou', 'Le Garage des Mots', 'Avec Doudou : répare les mots', 'mots', dueWords ? `${dueWords} à revoir` : null),
-    world('w2', 'moezeh', 'Grand Prix des Tables', 'Avec Moezeh : ×6 ×7 ×8 ×9', 'tables'),
+    world('w2', 'moezeh', 'Grand Prix des Tables', 'Avec Moezeh : les tables de 1 à 11', 'tables'),
     world('w3', 'isis', 'Détective Isis', 'Résous les problèmes comme un pro', 'problemes'),
-    world('w4', 'loulou', 'Le Permis Trottinette', 'Avec Loulou : la route, le marché…', 'route'));
+    world('w4', 'loulou', 'Le Permis Trottinette', 'Avec Loulou : la route, le marché…', 'route'),
+    (() => { const D = window.ZDEVOIRS, s = Z.state.devoirs && Z.state.devoirs.id === D.id ? Z.state.devoirs.done : {}; const n = D.items.filter(i => !s[i.id]).length;
+      return world('w5', 'franklin', 'Mes devoirs', 'Avec Franklin : les devoirs de l’agenda', 'devoirs', n ? `${n} à faire` : '✅'); })());
 
   const nav = h('div', { class: 'nav' },
     h('button', { class: 'on' }, h('span', null, '🏠'), 'Monde'),
@@ -122,7 +124,7 @@ Z.screens.home = function () {
 };
 
 function welcome() {
-  const t = `Salut ${Z.state.name} ! Moi c'est Loulou. Bienvenue au Garage de Loulou ! Mes copains Doudou, Moezeh et Isis sont là aussi. Doudou t'aide en français, Moezeh en maths, Isis résout les problèmes avec toi, et moi, je t'apprends à rouler prudent en trottinette. Ici, tu gagnes des éclairs pour décorer ta trottinette Kukirin G2. On y va ?`;
+  const t = `Salut ${Z.state.name} ! Moi c'est Loulou. Bienvenue au Garage de Loulou ! Mes copains Doudou, Moezeh et Isis sont là aussi, et Franklin la tortue t'aide pour tes devoirs. Doudou t'aide en français, Moezeh en maths, Isis résout les problèmes avec toi, et moi, je t'apprends à rouler prudent en trottinette. Ici, tu gagnes des éclairs pour décorer ta trottinette Kukirin G2. On y va ?`;
   const close = Z.modal(h('div', { class: 'col center' },
     Z.svg(Z.art.cat(), 'mini-cat-big'),
     h('h2', null, 'Salut ! Moi c\'est Loulou 🐾'),
@@ -294,7 +296,7 @@ Z.screens.parent = function () {
   const rate = h('input', { type: 'range', min: '0.6', max: '1.2', step: '0.05', value: String(st.settings.rate) });
   rate.addEventListener('change', () => { st.settings.rate = Number(rate.value); Z.save(); Z.speak('Voici la vitesse de la voix.'); });
   const name = h('input', { value: st.name });
-  name.addEventListener('change', () => { st.name = name.value.trim() || 'Zouzou Gabi'; Z.save(); });
+  name.addEventListener('change', () => { st.name = name.value.trim() || 'Zouzou'; Z.save(); });
   const snd = h('select', null, h('option', { value: '1', selected: st.settings.sound }, 'Sons activés'), h('option', { value: '0', selected: !st.settings.sound }, 'Sons coupés'));
   snd.addEventListener('change', () => { st.settings.sound = snd.value === '1'; Z.save(); });
   const cartoon = h('select', null, h('option', { value: '1', selected: st.settings.cartoon !== false }, 'Voix de Loulou : dessin animé'), h('option', { value: '0', selected: st.settings.cartoon === false }, 'Voix de Loulou : normale'));

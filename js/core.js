@@ -42,7 +42,7 @@ Z.dayNum = (iso = Z.today()) => { const [y, m, d] = iso.split('-').map(Number); 
 const KEY = 'zouzou-cm1-v1';
 function defaultState() {
   return {
-    name: 'Zouzou Gabi', eclairs: 25, xp: 0,
+    name: 'Zouzou', eclairs: 25, xp: 0,
     streak: { count: 0, last: null },
     words: {}, facts: {}, probs: {}, stickers: {}, route: {},
     owned: { model: ['g2'], color: ['orange'], helmet: ['aucun'], cat: ['aucun'], cat_moezeh: ['aucun'], cat_doudou: ['aucun'], cat_isis: ['aucun'] },
@@ -60,6 +60,7 @@ Z.load = function () {
   if (!s) return d;
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   for (const k of ['owned', 'equip', 'settings', 'daily', 'streak']) s[k] = Object.assign({}, d[k], s[k]);
+  if (s.name === 'Zouzou Gabi') s.name = 'Zouzou';   /* demande de Maman : juste « Zouzou » */
   return s;
 };
 Z.state = Z.load();
@@ -184,10 +185,10 @@ Z.speak = function (text, opts = {}) {
      les vrais sons du mot, sans déformation. */
   const singleWord = !/\s/.test(text.trim());
   const cartoon = Z.state.settings.cartoon !== false && !opts.natural && !singleWord && opts.pitch === undefined;
-  const rate = (opts.rate || 1) * Z.state.settings.rate * (cartoon ? (({ loulou: 1.0, moezeh: 1.05, doudou: 0.95, isis: 0.98 })[Z.narrator] || 1) : 1);
+  const rate = (opts.rate || 1) * Z.state.settings.rate * (cartoon ? (({ loulou: 1.0, moezeh: 1.05, doudou: 0.95, isis: 0.98, franklin: 0.9 })[Z.narrator] || 1) : 1);
   /* Chaque chat a sa voix : Loulou = la plus aiguë (petite voix d'enfant),
      Moezeh = un peu plus grave et tonique (le coach des maths), Doudou = douce et posée */
-  const VOICES = { isis: { p: 1.65, r: 0.98 }, loulou: { p: 2.0, r: 1.0 }, moezeh: { p: 1.45, r: 1.05 }, doudou: { p: 1.8, r: 0.95 } };
+  const VOICES = { franklin: { p: 1.25, r: 0.9 }, isis: { p: 1.65, r: 0.98 }, loulou: { p: 2.0, r: 1.0 }, moezeh: { p: 1.45, r: 1.05 }, doudou: { p: 1.8, r: 0.95 } };
   const vc = VOICES[Z.narrator] || VOICES.loulou;
   const pitch = opts.pitch !== undefined ? opts.pitch : cartoon ? vc.p : 1.0;
   return (async () => {
@@ -314,7 +315,7 @@ Z.art = {};
 Z.colorOf = (id) => (ZDATA.colors.find(c => c.id === id) || ZDATA.colors[0]).c;
 Z.helmetOf = (id) => (ZDATA.helmets.find(c => c.id === id) || ZDATA.helmets[0]);
 
-/* Zouzou Gabi sur sa trottinette Kukirin G2 (vue de côté) */
+/* Zouzou sur sa trottinette Kukirin G2 (vue de côté) */
 Z.art.rider = function ({ color, helmet, rider = true, model } = {}) {
   const c = color || Z.colorOf(Z.state.equip.color);
   const M = Z.modelOf(model);
@@ -469,10 +470,41 @@ Z.CATS = {
   isis: { name: 'Isis', fur: '#8b7655', mask: '#8b7655', face: '#8b7655', bib: '#f3eee4', paw: '#c98b4e', stripe: '#3b3022', eye: '#86a85c', nose: '#d98c84', blaze: false, ginger: '#b98b54' },
   doudou: { name: 'Doudou', fur: '#9a7a4e', mask: '#9a7a4e', face: '#9a7a4e', bib: '#e6d3ae', paw: '#a8875a', stripe: '#4a3a26', eye: '#b9b552', nose: '#d99a8a', blaze: false, ginger: '#c48a4a' }
 };
+/* ---------- Franklin, la tortue (d'après la photo : tortue d'Hermann) ----------
+   Carapace noire en dôme, écailles bordées de jaune, tête et pattes beiges écailleuses. */
+Z.art.franklin = function ({ mood = 'happy' } = {}) {
+  const Y = '#e6c463', K = '#1f1a14', S = '#d6c393', SD = '#a8956a';
+  const scute = (d, cx, cy) => `<path d="${d}" fill="#2a2219" stroke="${Y}" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="${cx}" cy="${cy}" rx="5" ry="4" fill="${Y}" opacity=".85"/>`;
+  const eye = (x) => mood === 'think'
+    ? `<path d="M${x - 6} 83 q6 -4 12 0" stroke="#3b2f1e" stroke-width="3" fill="none" stroke-linecap="round"/>`
+    : `<circle cx="${x}" cy="82" r="7" fill="#fff" stroke="#3b2f1e" stroke-width="1.5"/><circle cx="${x + 1}" cy="83" r="4" fill="#2b1d10"/><circle cx="${x + 2.5}" cy="81" r="1.5" fill="#fff"/>`;
+  return `<svg viewBox="0 -4 120 134" class="cat-svg" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="60" cy="124" rx="48" ry="5" fill="rgba(0,0,0,.18)"/>
+    <ellipse cx="22" cy="113" rx="13" ry="10" fill="${S}"/><ellipse cx="98" cy="113" rx="13" ry="10" fill="${S}"/>
+    <path d="M14 119 l-2 4 M20 121 v4 M26 121 l2 4 M94 121 l-2 4 M100 121 v4 M106 119 l2 4" stroke="#7a6a48" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="18" cy="109" r="2" fill="${SD}"/><circle cx="25" cy="112" r="2" fill="${SD}"/><circle cx="95" cy="110" r="2" fill="${SD}"/><circle cx="101" cy="113" r="2" fill="${SD}"/>
+    <path d="M6 100 Q6 18 60 16 Q114 18 114 100 Z" fill="${K}"/>
+    ${scute('M46 24 L74 24 L80 40 L60 50 L40 40 Z', 60, 35)}
+    ${scute('M14 66 Q16 44 36 36 L50 54 L44 80 L12 82 Z', 30, 62)}
+    ${scute('M106 66 Q104 44 84 36 L70 54 L76 80 L108 82 Z', 90, 62)}
+    ${scute('M44 58 L60 52 L76 58 L74 72 L46 72 Z', 60, 63)}
+    <path d="M7 92 Q60 106 113 92 L113 101 Q60 114 7 101 Z" fill="${Y}"/>
+    <path d="M20 96 v8 M34 99 v9 M48 101 v9 M72 101 v9 M86 99 v9 M100 96 v8" stroke="${K}" stroke-width="3"/>
+    <rect x="47" y="84" width="26" height="22" rx="8" fill="${S}"/>
+    <ellipse cx="60" cy="84" rx="24" ry="19" fill="${S}"/>
+    <path d="M40 76 Q60 58 80 76 Q70 70 60 70 Q50 70 40 76 Z" fill="${SD}"/>
+    <path d="M48 70 l4 3 M56 67 l2 4 M64 67 l-2 4 M72 70 l-4 3" stroke="#8a7a55" stroke-width="1.6" stroke-linecap="round"/>
+    ${eye(51)}${eye(69)}
+    <ellipse cx="44" cy="92" rx="4" ry="2.5" fill="#f2a7a0" opacity=".6"/><ellipse cx="76" cy="92" rx="4" ry="2.5" fill="#f2a7a0" opacity=".6"/>
+    <path d="M51 94 q9 7 18 0" stroke="#5b4a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </svg>`;
+};
+
 /* clé de rangement des accessoires : 'cat' pour Loulou, 'cat_moezeh', 'cat_doudou', 'cat_isis' */
 Z.catKey = (id) => (!id || id === 'loulou') ? 'cat' : 'cat_' + id;
 Z.art.cat = function ({ acc, mood = 'happy', who } = {}) {
   const id = who || 'loulou';
+  if (id === 'franklin') return Z.art.franklin({ mood });
   const k = Z.CATS[id] || Z.CATS.loulou;
   const a = acc || Z.state.equip[Z.catKey(id)] || 'aucun';
   let extra = '';

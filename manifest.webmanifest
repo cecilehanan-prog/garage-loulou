@@ -1,7 +1,7 @@
 {
   "name": "Le Garage de Loulou",
   "short_name": "Garage Loulou",
-  "description": "Les jeux d'apprentissage de Zouzou Gabi et Loulou",
+  "description": "Les jeux d'apprentissage de Zouzou et Loulou",
   "lang": "fr",
   "start_url": "./index.html",
   "scope": "./",

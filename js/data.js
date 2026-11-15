@@ -1,5 +1,5 @@
 /* =========================================================
-   DONNÉES PÉDAGOGIQUES — Zouzou Gabi CM1
+   DONNÉES PÉDAGOGIQUES — Zouzou CM1
    ---------------------------------------------------------
    Format des mots (champ "s") :
      - les syllabes sont séparées par des tirets  :  ba-llon
@@ -150,7 +150,7 @@ ZDATA.alts = {
    ========================================================= */
 ZDATA.problems = [
   { id: 'p1', e: '🛴', schema: 'parties', unknown: 'tout',
-    text: "Samedi, Zouzou Gabi roule {12} km avec sa trottinette Kukirin G2. Dimanche, il roule {15} km. Pendant ce temps, Loulou dort {3!} heures. Combien de kilomètres Zouzou a-t-il roulés en tout ?",
+    text: "Samedi, Zouzou roule {12} km avec sa trottinette Kukirin G2. Dimanche, il roule {15} km. Pendant ce temps, Loulou dort {3!} heures. Combien de kilomètres Zouzou a-t-il roulés en tout ?",
     q: ["Combien de kilomètres en tout ?", "Combien d'heures Loulou dort ?", "De quelle couleur est la G2 ?"],
     op: '+', a: 12, b: 15, r: 27, unit: 'km',
     end: ["Zouzou a roulé 27 km en tout.", "Zouzou a roulé 27 chats en tout."] },
@@ -292,7 +292,7 @@ ZDATA.stickers = [
 /* Phrases d'encouragement : on félicite l'EFFORT et la MÉTHODE, pas le "don". */
 ZDATA.praise = [
   "Bravo, tu as pris ton temps !", "Super, ton cerveau s'entraîne !", "Excellent travail !",
-  "Tu progresses à toute vitesse !", "Trop fort, Zouzou Gabi !", "Champion !", "Génial, continue !",
+  "Tu progresses à toute vitesse !", "Trop fort, Zouzou !", "Champion !", "Génial, continue !",
   "Tu as bien réfléchi !", "Waouh, quelle concentration !"
 ];
 ZDATA.retry = [
@@ -309,7 +309,7 @@ ZDATA.family = [
   { id: 'gabriel', name: 'Gabriel' }
 ];
 ZDATA.cheers = [
-  "Bravo Zouzou, t'es un champion !", "Trop fort, Zouzou Gabi !", "Waouh, quelle fierté !",
+  "Bravo Zouzou, t'es un champion !", "Trop fort, Zouzou !", "Waouh, quelle fierté !",
   "Continue comme ça, Zouzou !", "Énorme ! Tu progresses à fond !", "Respect, Zouzou ! Quelle concentration !"
 ];
 

@@ -296,7 +296,7 @@
           const b = h('button', {
             class: 'choice', onclick: () => {
               if (grid.dataset.done || b.classList.contains('bad')) return;
-              if (v === q.r) { grid.dataset.done = '1'; b.classList.add('good'); Z.sfx.good(); Z.speak(q.a === q.b ? `Bravo ! ${q.a} fois ${q.b}, ${q.r} !` : `Bravo ! ${q.a} fois ${q.b}, ${q.b} fois ${q.a}, ${q.r} !`).then(() => done(!miss)); }
+              if (v === q.r) { grid.dataset.done = '1'; b.classList.add('good'); Z.sfx.good(); Z.speak(`${q.a} fois ${q.b} égale ${q.r} !`).then(() => done(!miss)); }
               else { miss++; b.classList.add('bad'); Z.sfx.bad(); Z.speak('Pas grave, cherche encore.'); }
             }
           }, String(v));
