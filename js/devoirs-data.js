@@ -24,10 +24,10 @@
    puis on écrit ici les nouveaux devoirs avec un nouvel id (la date du lundi).
    ========================================================= */
 window.ZDEVOIRS = {
-  id: '2026-11-18', titre: 'Devoirs du 18 novembre',
+  id: '2026-11-18', titre: 'Devoirs pour jeudi 19 novembre',
   items: [
     {
-      id: 'suite', type: 'suite', pour: 'Exercice 2', titre: 'La suite des nombres',
+      id: 'suite', type: 'suite', pour: 'Pour jeudi 19 · exercice 2', titre: 'La suite des nombres',
       consigne: 'Complète la suite des nombres.',
       /* 4 lignes, 10 colonnes : on compte de haut en bas, colonne par colonne */
       lignes: 4, colonnes: 10,
@@ -47,7 +47,7 @@ window.ZDEVOIRS = {
       ]
     },
     {
-      id: 'motsS5', type: 'mots', pour: 'Les mots S5', titre: 'Mes mots à apprendre (S5)',
+      id: 'motsS5', type: 'mots', pour: 'Pour jeudi 19 · mots 21 à 25', titre: 'Mes mots à apprendre (S5)',
       consigne: 'Apprends les mots 21 à 25.',
       mots: [
         'autour',
@@ -63,7 +63,7 @@ window.ZDEVOIRS = {
       ]
     },
     {
-      id: 'groupes', type: 'groupes', pour: 'La leçon', titre: 'Les groupes de verbes',
+      id: 'groupes', type: 'groupes', pour: 'Pour jeudi 19 · leçon', titre: 'Les groupes de verbes',
       consigne: 'Apprends la leçon : le 3e groupe.',
       lecon: [
         ['1er groupe', 'Les verbes en -er', 'chanter, jouer, manger (sauf aller)'],
