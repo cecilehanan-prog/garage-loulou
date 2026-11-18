@@ -308,7 +308,12 @@ Z.wordEl = function (parsed, { big = false, tricks = true, cls = '' } = {}) {
 };
 
 /* Tous les mots (programme + mots ajoutés par les parents) */
-Z.allWords = () => ZDATA.words.concat(Z.state.customWords || []);
+Z.allWords = () => {
+  const base = ZDATA.words.concat(Z.state.customWords || []), ids = new Set(base.map(w => w.id));
+  /* + les mots des devoirs (ils reviennent en révision) */
+  const hw = (Z.homeworkWords ? Z.homeworkWords() : []).filter(w => !ids.has(w.id) && ids.add(w.id));
+  return base.concat(hw);
+};
 
 /* ---------- Dessins (SVG) ---------- */
 Z.art = {};

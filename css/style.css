@@ -445,3 +445,35 @@ button { font-family: inherit; color: inherit; letter-spacing: inherit; cursor: 
   #print .pv { border: 2px solid #dc2626; padding: 0 3px; }
   #print .ps { text-decoration: underline 2px #2563eb; text-underline-offset: 4px; }
 }
+
+/* ---------- Devoirs : tableau de nombres, pavé, groupes de verbes ---------- */
+.grille-wrap { overflow-x: auto; }
+.grille { border-collapse: collapse; margin: 0 auto; background: #fff; }
+.grille td, .grille th { border: 2px solid #9ca3af; width: 32px; height: 38px; text-align: center; font-weight: 700; font-size: 15px; padding: 0; }
+.grille th { border: none; font-size: 11px; color: var(--soft); width: 26px; }
+.grille td.rempli { color: #15803d; }
+.grille td.cur { background: #fde68a; box-shadow: inset 0 0 0 3px #f59e0b; color: #b45309; }
+.grille tr.row-on td { background: #dbeafe; }
+.grille td.m-R, .leg.m-R { box-shadow: inset 0 0 0 3px #dc2626; border-radius: 50%; }
+.grille td.m-V, .leg.m-V { box-shadow: inset 0 0 0 3px #16a34a; border-radius: 50%; }
+.grille td.m-RV, .leg.m-RV { box-shadow: inset 0 0 0 3px #dc2626, inset 0 0 0 6px #16a34a; border-radius: 50%; }
+.grille td.a-revoir { background: #fef08a; animation: pulse 1s ease-in-out infinite; }
+.leg { display: inline-grid; place-items: center; width: 34px; height: 34px; font-weight: 700; }
+.pave { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 320px; margin: 0 auto; width: 100%; }
+.touche { min-height: 58px; font-size: 1.6em; font-weight: 700; border-radius: 16px; background: #fff; border: 4px solid #d6c9a8; box-shadow: 0 5px 0 #d6c9a8; color: var(--ink); }
+.touche:active { transform: translateY(4px); box-shadow: 0 1px 0 #d6c9a8; }
+.touche.ok { background: var(--green); border-color: #15803d; box-shadow: 0 5px 0 #15803d; color: #fff; }
+.choice.picked { background: #dbeafe; border-color: #2563eb; box-shadow: 0 6px 0 #2563eb; }
+.choices.une-col { grid-template-columns: 1fr; }
+.lecon { position: relative; }
+.lecon .ear { position: absolute; right: 12px; top: 12px; }
+.lecon-g { padding: 8px 10px; border-radius: 12px; }
+.lecon-g.focus { background: #dbeafe; }
+.lecon-t { font-weight: 700; font-size: 1.15em; color: #1d4ed8; }
+@media print {
+  #print .p-grille { border-collapse: collapse; margin: 6px 0; }
+  #print .p-grille td { border: 1px solid #000; width: 30px; height: 26px; text-align: center; }
+  #print .pm-R, #print .pm-V, #print .pm-RV { display: inline-block; min-width: 22px; border-radius: 50%; }
+  #print .pm-R { border: 2px solid #dc2626; } #print .pm-V { border: 2px solid #16a34a; }
+  #print .pm-RV { border: 2px solid #dc2626; box-shadow: 0 0 0 2px #16a34a; }
+}

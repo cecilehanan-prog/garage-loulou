@@ -48,7 +48,7 @@
     Z.endScreen(shell, { medal: '📚', title: isOld() ? 'Révision terminée !' : 'Exercice terminé !', eclairs, xp: eclairs, lines, kind: 'devoirs', detail: D().id + ':' + it.id, again: back, againLabel: '📚 Mes devoirs' });
   }
 
-  const ICO = { verbes: '✏️', sujet: '🟥', mathador: '🔢', poesie: '📜' };
+  const ICO = { verbes: '✏️', sujet: '🟥', mathador: '🔢', poesie: '📜', suite: '🧮', mots: '🔤', groupes: '📘' };
   const itemBtn = (it, s, wid) => h('button', { class: 'devoir' + (s.done[it.id] ? ' fait' : ''), onclick: () => { Z.sfx.vroum(); Z.go('devoir', it.id, wid); } },
     h('span', { class: 'd-ico' }, s.done[it.id] ? '✅' : ICO[it.type]),
     h('span', { class: 'grow' }, it.titre, h('small', null, it.pour)),
@@ -104,7 +104,7 @@
     week = findWeek(wid);
     const it = D().items.find(i => i.id === id);
     const shell = Z.shell({ title: it.titre });
-    ({ verbes, sujet, mathador, poesie })[it.type](shell, it);
+    ({ verbes, sujet, mathador, poesie, suite, mots, groupes })[it.type](shell, it);
   };
 
   /* ---------- VERBES À ACCORDER ---------- */
@@ -520,6 +520,191 @@
       h('button', { class: 'btn ghost wide', onclick: back }, 'Annuler')));
   }
 
+  /* ---------- MOTS À APPRENDRE : joués dans le Garage des Mots avec Doudou ---------- */
+  const wordsOf = (it) => it.mots.map(m => typeof m === 'string' ? ZDATA.words.find(w => w.id === m) : Object.assign({ prio: true }, m)).filter(Boolean);
+  /* les mots des devoirs reviennent ensuite en révision dans le Garage des Mots */
+  Z.homeworkWords = () => [window.ZDEVOIRS].concat(window.ZARCHIVES || [])
+    .flatMap(w => w.items.filter(i => i.type === 'mots')).flatMap(i => i.mots.filter(m => typeof m !== 'string').map(m => Object.assign({ prio: true }, m)));
+  function mots(shell, it) {
+    const wk = D(), old = isOld();
+    Z.go('mots', {
+      words: wordsOf(it), titre: it.titre,
+      onEnd: () => { storeOf(wk.id).done[it.id] = true; Z.save(); },
+      back: () => Z.go('devoirs', old ? wk.id : undefined)
+    });
+  }
+
+  /* ---------- TABLEAU DE NOMBRES + MULTIPLES ---------- */
+  function suite(shell, it) {
+    const s = store();
+    const res = s.res[it.id] = s.res[it.id] || {};
+    res.fill = res.fill || {}; res.marks = res.marks || {}; res.rep = res.rep || {};
+    const R = it.lignes, C = it.colonnes, val = (r, c) => c * R + r + 1;
+    const given = new Set(it.donnes);
+    const todo = []; for (let c = 0; c < C; c++) for (let r = 0; r < R; r++) if (!given.has(val(r, c))) todo.push(val(r, c));
+    const steps = 1 + it.questions.length;
+    const known = (v) => given.has(v) || res.fill[v];
+    const ord = (n) => n === 1 ? '1re' : n + 'e';
+
+    /* le tableau ; opts.cur = case en cours, opts.tap = toucher une case, opts.rows = lignes surlignées */
+    const grid = (opts = {}) => h('div', { class: 'grille-wrap' }, h('table', { class: 'grille' }, Array.from({ length: R }, (_, r) =>
+      h('tr', { class: (opts.rows || []).includes(r + 1) ? 'row-on' : '' },
+        opts.labels ? h('th', null, ord(r + 1)) : null,
+        Array.from({ length: C }, (_, c) => {
+          const v = val(r, c), m = res.marks[v] || '';
+          const td = h('td', { class: [given.has(v) ? 'donne' : res.fill[v] ? 'rempli' : '', v === opts.cur ? 'cur' : '', m ? 'm-' + m : '', (opts.bad || []).includes(v) ? 'a-revoir' : ''].join(' ').trim(),
+            onclick: opts.tap ? () => opts.tap(v, td) : null }, known(v) ? String(v) : v === opts.cur ? (opts.entry || '?') : '');
+          return td;
+        })))));
+
+    const intro = () => {
+      shell.clear(); shell.setSteps(steps, 0);
+      const t = `${it.consigne} On compte de 1 en 1, de haut en bas, colonne par colonne : 1, 2, 3, 4, puis on passe à la colonne suivante. Et dans chaque ligne, on ajoute 4 : 1, 5, 9, 13…`;
+      shell.root.append(h('h2', null, '🧮 ' + it.titre), Z.loulouSays(t), grid(),
+        h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.vroum(); todo.every(v => res.fill[v]) ? question(0) : fill(); } }, 'C’est parti ! ➡️'));
+    };
+
+    const fill = () => {
+      const v = todo.find(x => !res.fill[x]);
+      if (v === undefined) return question(0);
+      shell.clear(); shell.setSteps(steps, 0);
+      let entry = '', tries = 0;
+      const box = h('div');
+      const tip = h('div', { class: 'tip', style: { display: 'none' } });
+      const draw = () => { box.innerHTML = ''; box.append(grid({ cur: v, entry: entry || '?' })); };
+      const press = (k) => {
+        Z.sfx.tap();
+        if (k === '⌫') entry = entry.slice(0, -1);
+        else if (k === '✅') return check();
+        else if (entry.length < 3) entry += k;
+        draw();
+      };
+      const check = () => {
+        if (!entry) return;
+        if (Number(entry) === v) {
+          res.fill[v] = true; Z.save(); Z.sfx.good();
+          Z.speak(String(v)).then(() => fill());
+          return;
+        }
+        tries++; Z.sfx.bad(); entry = ''; draw();
+        const t = tries >= 2 ? `C’est ${v}. Tape ${v}.` : `Pas grave, essaie encore. On compte de 1 en 1 : avant cette case, il y a ${v - 1}. Après ${v - 1}, il y a… ?`;
+        tip.style.display = ''; tip.textContent = '💡 ' + t; Z.speak(t);
+      };
+      draw();
+      shell.root.append(h('h2', null, `🧮 Complète le tableau (${todo.filter(x => res.fill[x]).length + 1}/${todo.length})`), box,
+        h('div', { class: 'hint center' }, 'Tape le nombre de la case jaune :'), tip,
+        h('div', { class: 'pave' }, ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✅'].map(k => h('button', { class: 'touche' + (k === '✅' ? ' ok' : ''), onclick: () => press(k) }, k))));
+    };
+
+    const question = (qi) => {
+      if (qi >= it.questions.length) return reward(shell, it, 20, [`${todo.length} nombres écrits`, 'Les multiples de 2, 3, 4 et 5 ✅']);
+      const q = it.questions[qi];
+      shell.clear(); shell.setSteps(steps, qi + 1);
+      let tries = 0;
+      const tip = h('div', { class: 'tip', style: { display: 'none' } });
+      const fail = (t) => { tries++; Z.sfx.bad(); tip.style.display = ''; tip.textContent = '💡 ' + t; Z.speak(t); };
+      const win = (t) => { Z.sfx.good(); Z.save(); Z.speak(t).then(() => setTimeout(() => question(qi + 1), 400)); };
+      const title = h('h2', null, q.q);
+
+      if (q.type === 'lignes' || q.type === 'nombres') {
+        const opts = q.type === 'lignes' ? Array.from({ length: R }, (_, r) => r + 1) : q.choix;
+        const picked = new Set();
+        const box = h('div');
+        const draw = () => { box.innerHTML = ''; box.append(grid({ labels: q.type === 'lignes', rows: q.type === 'lignes' ? [...picked] : [] })); };
+        const btns = h('div', { class: 'choices' }, opts.map(o => {
+          const b = h('button', { class: 'choice mot', onclick: () => { Z.sfx.tap(); picked.has(o) ? picked.delete(o) : picked.add(o); b.classList.toggle('picked'); draw(); } },
+            q.type === 'lignes' ? `${ord(o)} ligne` : String(o));
+          b.dataset.o = o; return b;
+        }));
+        draw();
+        shell.root.append(title, Z.loulouSays(q.q.replace(/^[a-d]\. /, ''), { speak: true }), box, h('div', { class: 'hint center' }, 'Tu peux en choisir plusieurs.'), btns, tip,
+          h('button', { class: 'btn green wide', onclick: () => {
+            const ok = q.ok.length === picked.size && q.ok.every(x => picked.has(x));
+            if (ok) { res.rep[qi] = [...picked].sort((a, b) => a - b); return win('Bravo ! ' + q.rep); }
+            if (tries >= 1) [...btns.children].forEach(b => { if (q.ok.includes(Number(b.dataset.o))) b.classList.add('hint-good'); });
+            fail(tries >= 1 ? `${q.aide} Les bonnes réponses clignotent.` : `Pas tout à fait. ${q.aide}`);
+          } }, '✅ Vérifier'));
+        return;
+      }
+
+      if (q.type === 'entoure') {
+        const want = (v) => (v % q.rouge === 0 ? 'R' : '') + (v % q.vert === 0 ? 'V' : '');
+        const all = []; for (let c = 0; c < C; c++) for (let r = 0; r < R; r++) all.push(val(r, c));
+        let bad = [];
+        const box = h('div');
+        const cycle = { '': 'R', R: 'V', V: 'RV', RV: '' };
+        const draw = () => { box.innerHTML = ''; box.append(grid({ bad, tap: (v) => { Z.sfx.tap(); res.marks[v] = cycle[res.marks[v] || '']; if (!res.marks[v]) delete res.marks[v]; bad = bad.filter(x => x !== v); draw(); } })); };
+        draw();
+        const t = `${q.q.replace(/^c\. /, '')} Touche une case une fois : rouge. Deux fois : vert. Trois fois : rouge et vert. Astuce : dans la table de 3, on additionne les chiffres. Dans la table de 5, ça finit par 0 ou par 5.`;
+        shell.root.append(title, Z.loulouSays(t),
+          h('div', { class: 'card rule' },
+            h('div', null, '👆 1 fois → ', h('span', { class: 'leg m-R' }, '3'), ' rouge = table de 3'),
+            h('div', null, '👆👆 2 fois → ', h('span', { class: 'leg m-V' }, '5'), ' vert = table de 5'),
+            h('div', null, '👆👆👆 3 fois → ', h('span', { class: 'leg m-RV' }, '15'), ' les deux')),
+          box, tip,
+          h('button', { class: 'btn green wide', onclick: () => {
+            const wrong = all.filter(v => (res.marks[v] || '') !== want(v));
+            if (!wrong.length) return win('Bravo ! Tous les multiples de 3 sont en rouge, et tous les multiples de 5 en vert.');
+            if (tries >= 2) { all.forEach(v => { const w = want(v); if (w) res.marks[v] = w; else delete res.marks[v]; }); bad = []; draw(); fail('Regarde bien la correction, puis appuie encore sur Vérifier.'); return; }
+            if (tries >= 1) { bad = wrong; draw(); }
+            fail(tries >= 1 ? `Les cases qui clignotent sont à corriger. Table de 3 : 3, 6, 9, 12, 15… Table de 5 : 5, 10, 15, 20…` : `Presque ! Il reste ${wrong.length} case${wrong.length > 1 ? 's' : ''} à corriger. Table de 3 : 3, 6, 9, 12… Table de 5 : ça finit par 0 ou par 5.`);
+          } }, '✅ Vérifier'));
+      }
+    };
+    intro();
+  }
+
+  /* ---------- LES GROUPES DE VERBES ---------- */
+  function groupes(shell, it) {
+    const list = Z.shuffle(it.verbes);
+    let n = 0, errors = 0;
+    const ord = (g) => g === 1 ? '1er' : g + 'e';
+    const why = ([v, g, kind]) => {
+      if (kind === 'aller') return 'Piège ! Aller finit par -er, mais c’est le seul verbe en -er du 3e groupe.';
+      if (g === 1) return `${v} finit par -er : c’est le 1er groupe.`;
+      if (g === 2) return `Dis « nous » : nous ${v.slice(0, -2)}issons. Avec -issons, c’est le 2e groupe.`;
+      if (kind === 'ir3') return `Dis « nous » : nous ${v.slice(0, -2)}ons, pas « nous ${v.slice(0, -2)}issons ». Donc c’est le 3e groupe.`;
+      return `${v} ne finit pas par -er, et ce n’est pas un verbe en -issons : c’est le 3e groupe, tous les autres verbes.`;
+    };
+    const intro = () => {
+      shell.clear(); shell.setSteps(list.length, 0);
+      const t = 'Voici la leçon. ' + it.lecon.map(([g, r, e]) => `${g} : ${r}. Par exemple : ${e.replace('…', '')}.`).join(' ');
+      shell.root.append(h('h2', null, '📘 ' + it.titre), Z.loulouSays(it.consigne),
+        h('div', { class: 'card col lecon' }, it.lecon.map(([g, r, e], i) => h('div', { class: 'lecon-g' + (i === 2 ? ' focus' : '') },
+          h('div', { class: 'lecon-t' }, g), h('div', null, r), h('div', { class: 'hint' }, e))), Z.ear(t)),
+        h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.vroum(); ask(); } }, 'Je m’entraîne ➡️'));
+      Z.speak(t);
+    };
+    const ask = () => {
+      if (n >= list.length) return reward(shell, it, 15, [`${list.length} verbes rangés`, errors ? `${errors} petites erreurs, corrigées` : 'Zéro erreur ! 🔥']);
+      shell.clear(); shell.setSteps(list.length, n);
+      const cur = list[n], [v, g] = cur;
+      let tries = 0;
+      const tip = h('div', { class: 'tip', style: { display: 'none' } });
+      const grid = h('div', { class: 'choices une-col' }, [1, 2, 3].map(k => {
+        const b = h('button', { class: 'choice mot', onclick: () => {
+          if (b.classList.contains('bad') || grid.dataset.done) return;
+          tries++;
+          if (k === g) {
+            grid.dataset.done = '1'; b.classList.add('good'); Z.sfx.good(); n++;
+            Z.speak(`Bravo ! ${v}, ${ord(g)} groupe.`).then(() => setTimeout(ask, 400));
+          } else {
+            errors++; b.classList.add('bad'); Z.sfx.bad();
+            if (tries >= 2) [...grid.children][g - 1].classList.add('hint-good');
+            tip.style.display = ''; tip.textContent = '💡 ' + why(cur);
+            Z.speak((tries >= 2 ? '' : 'Pas grave, essaie encore. ') + why(cur));
+          }
+        } }, `${ord(k)} groupe`);
+        return b;
+      }));
+      shell.root.append(h('h2', null, 'Dans quel groupe ?'),
+        h('div', { class: 'card center row', style: { justifyContent: 'center' } }, h('div', { class: 'question' }, v), Z.ear(v, { natural: true })),
+        grid, tip);
+      Z.speak(`${v} ?`, { natural: true });
+    };
+    intro();
+  }
+
   /* ---------- PAGE À IMPRIMER POUR LA MAÎTRESSE ---------- */
   function printSheet() {
     Z.sfx.tap();
@@ -544,6 +729,15 @@
             const words = parseSujet(line), m = res && res[n];
             return h('p', null, String.fromCharCode(97 + n) + '. ', words.flatMap((w, i) => [h('span', { class: m && m[i] === 'V' ? 'pv' : m && m[i] === 'S' ? 'ps' : '' }, w.w), ' ']));
           })));
+      } else if (it.type === 'suite') {
+        const R = it.lignes, C = it.colonnes, val = (r, c) => c * R + r + 1, given = new Set(it.donnes);
+        const r0 = res || { fill: {}, marks: {}, rep: {} };
+        blocks.push(h('section', null, h('h3', null, it.consigne),
+          h('table', { class: 'p-grille' }, Array.from({ length: R }, (_, r) => h('tr', null, Array.from({ length: C }, (_, c) => {
+            const v = val(r, c), m = (r0.marks || {})[v] || '';
+            return h('td', null, given.has(v) || (r0.fill || {})[v] ? h('span', { class: m ? 'pm-' + m : '' }, String(v)) : '');
+          })))),
+          it.questions.filter(q => q.rep).map(q => { const qi = it.questions.indexOf(q); return h('p', null, h('b', null, q.q), ' ', (r0.rep || {})[qi] ? q.rep : '……'); })));
       } else if (it.type === 'mathador') {
         blocks.push(h('section', null, h('h3', null, `Mathador : ${it.nombres.join(' / ')} → ${it.cible}`),
           res ? res.log.map(l => h('p', null, l)) : h('p', null, '(pas encore fait)'),

@@ -37,9 +37,11 @@
     return 'syllabe par syllabe';
   };
 
-  Z.screens.mots = function () { start(); };
+  /* opts (devoirs) : { words, titre, onEnd, back } → on joue ces mots-là */
+  Z.screens.mots = function (opts) { start(opts); };
 
-  function buildSession() {
+  function buildSession(opts) {
+    if (opts && opts.words) return opts.words.slice();
     const st = Z.state, all = Z.allWords();
     const rec = (w) => st.words[w.id];
     const due = all.filter(w => rec(w) && Z.isDue(rec(w))).sort((a, b) => rec(a).box - rec(b).box);
@@ -54,15 +56,16 @@
     return list;
   }
 
-  function start() {
+  function start(opts) {
     const shell = Z.shell({ title: 'Garage des mots' });
-    const list = buildSession();
+    const list = buildSession(opts);
     const results = [];
     let i = 0;
 
     const intro = () => {
       shell.clear(); shell.setSteps(list.length, 0);
-      const t = `Coucou, moi c'est Doudou ! Bienvenue au garage des mots. Aujourd'hui, on répare ${list.length} mots ensemble. Chaque mot réparé recharge ta batterie.`;
+      const t = opts && opts.words ? `Coucou, moi c'est Doudou ! Ce sont tes mots à apprendre pour l'école. On en répare ${list.length} ensemble, et ensuite ils reviendront de temps en temps pour bien les retenir.`
+        : `Coucou, moi c'est Doudou ! Bienvenue au garage des mots. Aujourd'hui, on répare ${list.length} mots ensemble. Chaque mot réparé recharge ta batterie.`;
       shell.root.append(
         h('h2', null, '🔤 Le Garage des Mots'),
         Z.loulouSays(t, { speak: false }),
@@ -101,6 +104,7 @@
     };
 
     const finish = () => {
+      if (opts && opts.onEnd) opts.onEnd();
       const perfect = results.filter(Boolean).length;
       const medal = perfect === results.length ? '🥇' : perfect >= results.length / 2 ? '🥈' : '🥉';
       Z.endScreen(shell, {
@@ -108,7 +112,8 @@
         title: perfect === results.length ? 'Garage parfait !' : 'Mots réparés !',
         lines: [`${perfect} mot(s) du premier coup sur ${results.length}`, 'Les mots reviendront plus tard pour bien les ranger dans ta tête 🧠'],
         detail: list.map(w => w.id).join(','),
-        again: () => Z.go('mots')
+        again: opts && opts.back ? opts.back : () => Z.go('mots'),
+        againLabel: opts && opts.back ? '📚 Mes devoirs' : undefined
       });
     };
 
