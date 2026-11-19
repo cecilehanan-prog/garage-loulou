@@ -619,12 +619,15 @@ Z.art.face = function (id) {
     return base('#151515', extra, curls, fringe + copper, '#3b2416', '#2e2522', 4);
   }
   if (id === 'cecile') {
-    // Maman : longs cheveux châtains ondulés avec reflets clairs, yeux marron, tunique blanche brodée terracotta
+    // Maman : longs cheveux châtains ondulés avec petites mèches blondes, yeux marron, tunique blanche brodée terracotta
     const hairBack = `<path d="M30 50 Q24 18 60 16 Q96 18 92 52 Q98 80 96 104 Q90 116 80 112 Q86 90 80 70 L40 70 Q34 90 40 112 Q28 116 24 104 Q22 80 30 50 Z" fill="#5b3a24"/>
-      <path d="M28 70 q-4 18 4 34 M92 70 q4 18 -4 34" stroke="#9a7148" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+      <path d="M28 70 q-4 18 4 34 M92 70 q4 18 -4 34" stroke="#e6c07a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M33 78 q-3 14 3 28 M87 78 q3 14 -3 28" stroke="#f2d898" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
     const hairFront = `<path d="M34 52 Q30 22 62 20 Q90 22 86 50 Q80 34 64 32 Q50 36 40 46 Q37 50 34 52 Z" fill="#5b3a24"/>
-      <path d="M44 30 q12 -8 30 -4 M40 38 q8 -8 16 -8" stroke="#a37a4f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <path d="M29 46 Q25 66 32 86 L38 84 Q33 66 37 48 Z" fill="#5b3a24"/><path d="M91 46 Q95 66 88 86 L82 84 Q87 66 83 48 Z" fill="#5b3a24"/>`;
+      <path d="M44 30 q12 -8 30 -4 M40 38 q8 -8 16 -8 M66 26 q12 2 17 14 M52 25 q-10 4 -14 12" stroke="#e6c07a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <path d="M58 23 q10 -2 18 4 M46 34 q6 -5 12 -5" stroke="#f5dea3" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <path d="M29 46 Q25 66 32 86 L38 84 Q33 66 37 48 Z" fill="#5b3a24"/><path d="M91 46 Q95 66 88 86 L82 84 Q87 66 83 48 Z" fill="#5b3a24"/>
+      <path d="M31 52 q-2 16 3 30 M89 52 q2 16 -3 30" stroke="#e6c07a" stroke-width="2" fill="none" stroke-linecap="round"/>`;
     const tunic = `<path d="M48 97 L60 118 L72 97" fill="#f3cdb0"/>
       <path d="M46 96 L60 120 L74 96" stroke="#b5643c" stroke-width="3" fill="none"/>
       <path d="M42 97 L60 126 L78 97" stroke="#b5643c" stroke-width="1.6" fill="none" stroke-dasharray="3 2"/>
