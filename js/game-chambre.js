@@ -4,7 +4,7 @@
    • Aménager : la vraie chambre de Jasmin vue du dessus. Il déplace
      ses meubles (lit clic-clac qui s'ouvre et se ferme, bureau, chaise,
      lampe, 2 étagères, tapis de jeux, descente de lit). Le placard mural,
-     la fenêtre et la porte sont fixes, comme chez lui.
+     la fenêtre et la porte sont fixes, comme chez lui (chambre carrée).
    • Ranger le bazar : chaque objet par terre va à sa place.
    • Plier le linge (niveau 2) et Mon armoire rangée (niveau 3).
    • Chaque rangement rapporte des étoiles ⭐ : elles débloquent des
@@ -13,8 +13,11 @@
    ========================================================= */
 (function () {
   const h = Z.h;
-  const W = 320, H = 380;                 // plan de la chambre (unités SVG)
-  const IN = { x0: 14, y0: 14, x1: 306, y1: 366 };
+  /* Chambre CARRÉE (demande de Maman) : fenêtre au centre du mur du haut,
+     porte en bas à gauche, placard mural intégré au mur en bas à droite (2 portes battantes) */
+  const W = 340, H = 370;                 // plan de la chambre (unités SVG)
+  const IN = { x0: 14, y0: 14, x1: 326, y1: 326 };
+  const PLAN = 2;                         // version du plan (remet les meubles en place si le plan change)
 
   /* ---------- Les meubles (vue du dessus) ---------- */
   const FURN = {
@@ -28,14 +31,14 @@
     descente: { name: 'Descente de lit', w: 64, h: 26, rug: true }
   };
   const START = {
-    clicclac: { x: 210, y: 40, r: 0, open: true },
-    descente: { x: 222, y: 112, r: 0 },
-    bureau: { x: 70, y: 300, r: 0 },
-    chaise: { x: 97, y: 262, r: 0 },
-    lampe: { x: 128, y: 305, r: 0 },
-    etagere1: { x: 120, y: 18, r: 0 },
-    etagere2: { x: 186, y: 330, r: 180 },
-    tapis: { x: 130, y: 150, r: 0 }
+    clicclac: { x: 214, y: 22, r: 0, open: true },
+    descente: { x: 234, y: 92, r: 0 },
+    etagere1: { x: 22, y: 18, r: 0 },
+    bureau: { x: 20, y: 44, r: 0 },
+    lampe: { x: 78, y: 50, r: 0 },
+    chaise: { x: 47, y: 92, r: 180 },
+    tapis: { x: 116, y: 150, r: 0 },
+    etagere2: { x: 104, y: 304, r: 180 }
   };
 
   /* ---------- Jouets et décos débloqués avec les étoiles ⭐ ---------- */
@@ -73,7 +76,7 @@
     const st = Z.state;
     st.chambre = st.chambre || {};
     const c = st.chambre;
-    c.meubles = c.meubles || JSON.parse(JSON.stringify(START));
+    if (!c.meubles || c.plan !== PLAN) { c.meubles = JSON.parse(JSON.stringify(START)); c.plan = PLAN; c.deco = {}; }
     c.deco = c.deco || {};
     c.etoiles = c.etoiles || 0;
     if (!c.jour || c.jour.date !== Z.today()) c.jour = { date: Z.today(), ranger: 0, linge: 0, armoire: 0, vrai: false };
@@ -129,21 +132,29 @@
     return '';
   }
   /* murs, fenêtre, porte, placard mural (fixes) */
-  const roomBase = () => `
-    <rect width="${W}" height="${H}" fill="#7c6a58"/>
-    <rect x="${IN.x0}" y="${IN.y0}" width="${IN.x1 - IN.x0}" height="${IN.y1 - IN.y0}" fill="#e7cfa6"/>
-    ${Array.from({ length: 14 }, (_, i) => `<path d="M${IN.x0} ${IN.y0 + 12 + i * 25.5} H${IN.x1}" stroke="#d6b98a" stroke-width="1.2"/>`).join('')}
-    <rect x="200" y="4" width="0" height="0"/>
-    <rect x="96" y="2" width="0" height="0"/>
-    <g><rect x="36" y="3" width="70" height="11" fill="#bae6fd" stroke="#e0f2fe" stroke-width="2"/><path d="M71 3 v11" stroke="#fff" stroke-width="2"/></g>
-    <text x="71" y="28" font-size="9" text-anchor="middle" fill="#57534e">fenêtre</text>
-    <rect x="${IN.x0}" y="120" width="34" height="150" fill="#d4b483" stroke="#8b6b45" stroke-width="2"/>
-    <path d="M${IN.x0} 195 H${IN.x0 + 34}" stroke="#8b6b45" stroke-width="2"/><circle cx="${IN.x0 + 28}" cy="185" r="2" fill="#5b4630"/><circle cx="${IN.x0 + 28}" cy="205" r="2" fill="#5b4630"/>
-    <text x="${IN.x0 + 17}" y="${195 + 3}" font-size="8" text-anchor="middle" fill="#5b4630" transform="rotate(-90 ${IN.x0 + 17} 195)">placard mural</text>
-    <rect x="236" y="${IN.y1}" width="56" height="14" fill="#e7cfa6"/>
-    <path d="M236 ${IN.y1} A56 56 0 0 1 292 ${IN.y1 - 56}" stroke="#a8a29e" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
-    <path d="M292 ${IN.y1} V${IN.y1 - 56}" stroke="#8b6b45" stroke-width="4"/>
-    <text x="262" y="${IN.y1 - 8}" font-size="9" text-anchor="middle" fill="#57534e">porte</text>`;
+  const roomBase = () => {
+    const { x0, y0, x1, y1 } = IN;
+    return `
+    <rect x="0" y="0" width="${W}" height="${y1 + 14}" fill="#7c6a58"/>
+    <rect x="196" y="${y1}" width="136" height="38" rx="2" fill="#7c6a58"/>
+    <rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="#e7cfa6"/>
+    ${Array.from({ length: 12 }, (_, i) => `<path d="M${x0} ${y0 + 12 + i * 26} H${x1}" stroke="#d6b98a" stroke-width="1.2"/>`).join('')}
+    <!-- fenêtre au centre du mur du haut -->
+    <rect x="${W / 2 - 40}" y="2" width="80" height="12" fill="#bae6fd" stroke="#e0f2fe" stroke-width="2"/><path d="M${W / 2} 2 v12" stroke="#fff" stroke-width="2"/>
+    <text x="${W / 2}" y="26" font-size="9" text-anchor="middle" fill="#57534e">fenêtre</text>
+    <!-- porte en bas à gauche -->
+    <rect x="${x0 + 6}" y="${y1}" width="58" height="14" fill="#e7cfa6"/>
+    <path d="M${x0 + 64} ${y1} A58 58 0 0 0 ${x0 + 6} ${y1 - 58}" stroke="#a8a29e" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+    <path d="M${x0 + 6} ${y1} V${y1 - 58}" stroke="#8b6b45" stroke-width="4" stroke-linecap="round"/>
+    <text x="${x0 + 38}" y="${y1 - 6}" font-size="9" text-anchor="middle" fill="#57534e">porte</text>
+    <!-- placard mural intégré dans le mur, en bas à droite, 2 portes battantes -->
+    <rect x="204" y="${y1}" width="120" height="30" fill="#d4b483"/>
+    <path d="M206 ${y1 + 1} H322" stroke="#8b6b45" stroke-width="3"/>
+    <path d="M264 ${y1 - 1} V${y1 + 3}" stroke="#5b4630" stroke-width="2"/>
+    <path d="M264 ${y1} A58 58 0 0 0 206 ${y1 - 58} M264 ${y1} A58 58 0 0 1 322 ${y1 - 58}" stroke="#a8a29e" stroke-width="1.2" stroke-dasharray="3 3" fill="none"/>
+    <circle cx="258" cy="${y1 + 6}" r="2" fill="#5b4630"/><circle cx="270" cy="${y1 + 6}" r="2" fill="#5b4630"/>
+    <text x="264" y="${y1 + 22}" font-size="9" text-anchor="middle" fill="#5b4630">placard mural</text>`;
+  };
   const furnBox = (id, m) => { const f = FURN[id]; return { w: f.w, h: id === 'clicclac' && !m.open ? f.hc : f.h }; };
   const placeG = (id, m, inner, cls = '') => {
     const b = furnBox(id, m);
@@ -268,7 +279,7 @@
         inv.append(h('button', { class: 'inv-it' + (ok ? '' : ' lock') + (placed ? ' placed' : ''), title: d.name, onclick: () => {
           if (!ok) { Z.sfx.bad(); const m = `${d.name} : il faut ${d.seuil} étoiles. Range ta chambre pour en gagner !`; Z.pop(`🔒 ${d.seuil} ⭐`, 'soft'); Z.speak(m); return; }
           Z.sfx.tap();
-          if (!placed) { c.deco[d.id] = { x: 140 + Z.rand(40), y: 160 + Z.rand(40) }; Z.save(); }
+          if (!placed) { c.deco[d.id] = { x: 150 + Z.rand(40), y: 150 + Z.rand(40) }; Z.save(); }
           sel = d.id; draw(); drawInv();
         } }, h('span', null, ok ? d.e : '🔒'), h('small', null, ok ? d.name : `${d.seuil} ⭐`)));
       });
@@ -318,7 +329,7 @@
     const c = ch();
     const shell = Z.shell({ title: 'Ranger' });
     const nb = [6, 8, 10][Z.pal()];
-    const mess = Z.shuffle(BAZAR).slice(0, nb).map(m => Object.assign({}, m, { x: IN.x0 + 20 + Z.rand(230), y: IN.y0 + 40 + Z.rand(270), rot: Z.rand(40) - 20 }));
+    const mess = Z.shuffle(BAZAR).slice(0, nb).map(m => Object.assign({}, m, { x: IN.x0 + 20 + Z.rand(IN.x1 - IN.x0 - 70), y: IN.y0 + 30 + Z.rand(IN.y1 - IN.y0 - 100), rot: Z.rand(40) - 20 }));
     let cur = null, done = 0, errors = 0, tries = 0;
     const stage = h('div', { class: 'chambre-stage' });
     const info = h('div', { class: 'card center info-bazar' });

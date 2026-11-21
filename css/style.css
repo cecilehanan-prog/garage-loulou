@@ -489,7 +489,7 @@ button { font-family: inherit; color: inherit; letter-spacing: inherit; cursor: 
 /* ---------- Ma chambre ---------- */
 .world.w6 { background: linear-gradient(135deg, #0891b2, #0e7490); }
 .chambre-stage { touch-action: none; }
-.chambre-svg { width: 100%; max-width: 420px; display: block; margin: 0 auto; border-radius: 14px; box-shadow: 0 4px 0 rgba(0,0,0,.15); }
+.chambre-svg { width: 100%; max-width: 420px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 0 rgba(0,0,0,.15)); }
 .chambre-svg .piece { cursor: grab; }
 .chambre-svg .piece.sel { filter: drop-shadow(0 0 4px #f59e0b) drop-shadow(0 0 2px #f59e0b); }
 .chambre-svg .bazar { cursor: pointer; }
