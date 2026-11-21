@@ -17,28 +17,28 @@
      porte en bas à gauche, placard mural intégré au mur en bas à droite (2 portes battantes) */
   const W = 340, H = 370;                 // plan de la chambre (unités SVG)
   const IN = { x0: 14, y0: 14, x1: 326, y1: 326 };
-  const PLAN = 2;                         // version du plan (remet les meubles en place si le plan change)
+  const PLAN = 3;                         // version du plan (remet les meubles en place si le plan change)
 
   /* ---------- Les meubles (vue du dessus) ---------- */
   const FURN = {
-    clicclac: { name: 'Lit clic-clac', w: 104, h: 64, hc: 38 },
-    bureau: { name: 'Bureau', w: 84, h: 42 },
+    clicclac: { name: 'Lit clic-clac', w: 104, h: 64, hc: 38, s: 1.3 },
+    bureau: { name: 'Bureau', w: 84, h: 42, s: 1.3 },
     chaise: { name: 'Chaise', w: 30, h: 30 },
     lampe: { name: 'Lampe de bureau', w: 20, h: 20 },
-    etagere1: { name: 'Étagère', w: 72, h: 18 },
-    etagere2: { name: 'Étagère', w: 72, h: 18 },
-    tapis: { name: 'Tapis de jeux', w: 112, h: 84, rug: true },
+    etagere1: { name: 'Étagère', w: 72, h: 18, s: 1.3 },
+    etagere2: { name: 'Étagère', w: 72, h: 18, s: 1.3 },
+    tapis: { name: 'Tapis de jeux', w: 112, h: 84, rug: true, s: 1.3 },   /* s = agrandi (demande de Maman) */
     descente: { name: 'Descente de lit', w: 64, h: 26, rug: true }
   };
   const START = {
-    clicclac: { x: 214, y: 22, r: 0, open: true },
-    descente: { x: 234, y: 92, r: 0 },
-    etagere1: { x: 22, y: 18, r: 0 },
-    bureau: { x: 20, y: 44, r: 0 },
-    lampe: { x: 78, y: 50, r: 0 },
-    chaise: { x: 47, y: 92, r: 180 },
-    tapis: { x: 116, y: 150, r: 0 },
-    etagere2: { x: 104, y: 304, r: 180 }
+    clicclac: { x: 190, y: 18, r: 0, open: true },
+    descente: { x: 226, y: 108, r: 0 },
+    etagere1: { x: 18, y: 16, r: 0 },
+    bureau: { x: 16, y: 44, r: 0 },
+    lampe: { x: 100, y: 52, r: 0 },
+    chaise: { x: 56, y: 104, r: 180 },
+    tapis: { x: 96, y: 146, r: 0 },
+    etagere2: { x: 90, y: 300, r: 180 }
   };
 
   /* ---------- Jouets et décos débloqués avec les étoiles ⭐ ---------- */
@@ -76,7 +76,7 @@
     const st = Z.state;
     st.chambre = st.chambre || {};
     const c = st.chambre;
-    if (!c.meubles || c.plan !== PLAN) { c.meubles = JSON.parse(JSON.stringify(START)); c.plan = PLAN; c.deco = {}; }
+    if (!c.meubles || c.plan !== PLAN) { c.meubles = JSON.parse(JSON.stringify(START)); c.plan = PLAN; }
     c.deco = c.deco || {};
     c.etoiles = c.etoiles || 0;
     if (!c.jour || c.jour.date !== Z.today()) c.jour = { date: Z.today(), ranger: 0, linge: 0, armoire: 0, vrai: false };
@@ -155,7 +155,7 @@
     <circle cx="258" cy="${y1 + 6}" r="2" fill="#5b4630"/><circle cx="270" cy="${y1 + 6}" r="2" fill="#5b4630"/>
     <text x="264" y="${y1 + 22}" font-size="9" text-anchor="middle" fill="#5b4630">placard mural</text>`;
   };
-  const furnBox = (id, m) => { const f = FURN[id]; return { w: f.w, h: id === 'clicclac' && !m.open ? f.hc : f.h }; };
+  const furnBox = (id, m) => { const f = FURN[id], k = f.s || 1; return { w: f.w * k, h: (id === 'clicclac' && !m.open ? f.hc : f.h) * k }; };
   const placeG = (id, m, inner, cls = '') => {
     const b = furnBox(id, m);
     return `<g class="piece ${cls}" data-id="${id}" transform="translate(${m.x} ${m.y}) rotate(${m.r || 0} ${b.w / 2} ${b.h / 2})">${inner}</g>`;
@@ -163,7 +163,7 @@
   function roomSvg({ sel, mess = [] } = {}) {
     const c = ch();
     const ids = Object.keys(FURN).sort((a, b) => (FURN[b].rug ? 1 : 0) - (FURN[a].rug ? 1 : 0) || (a === 'lampe' ? 1 : b === 'lampe' ? -1 : 0));
-    const furn = ids.map(id => placeG(id, c.meubles[id], furnSvg(id, c.meubles[id]), id === sel ? 'sel' : '')).join('');
+    const furn = ids.map(id => placeG(id, c.meubles[id], (FURN[id].s ? `<g transform="scale(${FURN[id].s})">${furnSvg(id, c.meubles[id])}</g>` : furnSvg(id, c.meubles[id])), id === sel ? 'sel' : '')).join('');
     const deco = Object.entries(c.deco).map(([id, p]) => { const d = DECO.find(x => x.id === id); return d ? `<g class="piece deco ${id === sel ? 'sel' : ''}" data-id="${id}" transform="translate(${p.x} ${p.y})"><rect width="30" height="30" fill="transparent"/><text x="15" y="23" font-size="22" text-anchor="middle">${d.e}</text></g>` : ''; }).join('');
     const messG = mess.map(m => m.done ? '' : `<g class="bazar" data-k="${m.k}" transform="translate(${m.x} ${m.y}) rotate(${m.rot})"><circle cx="15" cy="15" r="17" fill="#fff" opacity=".55"/><text x="15" y="24" font-size="24" text-anchor="middle">${m.e}</text></g>`).join('');
     return `<svg viewBox="0 0 ${W} ${H}" class="chambre-svg" xmlns="http://www.w3.org/2000/svg">${roomBase()}${furn}${deco}${messG}</svg>`;
