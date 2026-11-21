@@ -84,9 +84,12 @@
 
   function pickProblem() {
     const done = Z.state.probs;
-    const todo = ZDATA.problems.filter(p => !done[p.id]);
+    /* facile : le tout et ses parties, comparer ; moyen : + groupes égaux ; expert : + partages */
+    const ok = [['parties', 'comparaison'], ['parties', 'comparaison', 'groupes'], ['parties', 'comparaison', 'groupes', 'partage']][Z.pal()];
+    const todo = ZDATA.problems.filter(p => !done[p.id]).sort((a, b) => (ok.includes(b.schema) ? 1 : 0) - (ok.includes(a.schema) ? 1 : 0));
     if (todo.length) return todo[0];
-    return Z.pick(ZDATA.problems.filter(p => p.id !== Z.state.lastProb) || ZDATA.problems);
+    const pool = ZDATA.problems.filter(p => p.id !== Z.state.lastProb && ok.includes(p.schema));
+    return Z.pick(pool.length ? pool : ZDATA.problems);
   }
 
   function start() {

@@ -142,7 +142,7 @@
     ['🥕', 'des carottes'], ['🍇', 'du raisin'], ['🥖', 'une baguette'], ['🧀', 'du fromage'], ['🍉', 'une pastèque']];
   function marketQuiz() {
     const f = Z.shuffle(FRUITS);
-    const lvl = Z.rand(3);
+    const lvl = [Z.rand(2), Z.rand(3), 1 + Z.rand(2)][Z.pal()];   // le marché suit le palier
     let items, bill;
     if (lvl === 0) { items = [[f[0], 2 + Z.rand(7)]]; bill = 10; }                        // 1 article, billet de 10
     else if (lvl === 1) { const a = 2 + Z.rand(7), b = 2 + Z.rand(Math.min(8, 18 - a)); items = [[f[0], a], [f[1], b]]; bill = 20; }  // 2 articles, billet de 20

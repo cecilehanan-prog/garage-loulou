@@ -93,6 +93,24 @@ Z.levelInfo = function () {
   return { lvl, cur: xp - base, need };
 };
 
+/* ---------- Paliers de difficulté : facile → moyen → expert ----------
+   Ils suivent le niveau (1-3 facile, 4-6 moyen, 7 et plus expert).
+   Maman peut forcer un palier dans l'espace parents. */
+Z.PALIERS = [
+  { id: 'facile', name: 'Facile', ico: '🟢', from: 1 },
+  { id: 'moyen', name: 'Moyen', ico: '🟠', from: 4 },
+  { id: 'expert', name: 'Expert', ico: '🔴', from: 7 }
+];
+Z.pal = () => {
+  const f = Z.state.settings.palier;
+  const forced = Z.PALIERS.findIndex(p => p.id === f);
+  if (forced >= 0) return forced;
+  const lvl = Z.levelInfo().lvl;
+  return lvl >= 7 ? 2 : lvl >= 4 ? 1 : 0;
+};
+Z.palier = () => Z.PALIERS[Z.pal()];
+Z.palChip = () => Z.h('span', { class: 'chip palier p' + Z.pal() }, Z.palier().ico + ' ' + Z.palier().name);
+
 /* Plus Jasmin progresse, plus sa Kukirin va vite (affichée sur l'écran du guidon) */
 Z.speedOf = (lvl) => Math.min(45, 10 + (lvl - 1) * 4);
 Z.modelOf = (id) => ZDATA.models.find(m => m.id === (id || Z.state.equip.model)) || ZDATA.models[0];

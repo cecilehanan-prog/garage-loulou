@@ -93,7 +93,7 @@
         if (w.family) chain.push(family);
         chain.push(photo);
         runChain(chain, w, p, shell, () => rebuild(w, p, shell, { model: false }, done));
-      } else if (rec.box >= 3) {
+      } else if (rec.box >= (Z.pal() === 2 ? 2 : 3)) {   // expert : le défi lettre par lettre arrive plus tôt
         letters(w, p, shell, done);
       } else {
         rebuild(w, p, shell, { model: false }, (ok) => {
@@ -248,7 +248,10 @@
   function rebuild(w, p, shell, { model }, done) {
     shell.clear();
     const units = unitsOf(p);
-    const pieces = Z.shuffle(units.map(u => u.text).concat([distractorOf(units)]));
+    /* moyen : 2 morceaux pièges, expert : 3 */
+    const traps = [];
+    for (let k = 0; k < 6 && traps.length < 1 + Z.pal(); k++) { const d = distractorOf(units); if (d && !traps.includes(d) && !units.some(u => u.text === d)) traps.push(d); }
+    const pieces = Z.shuffle(units.map(u => u.text).concat(traps));
     let pos = 0, errors = 0, errHere = 0;
     const sylIndexOfUnit = (k) => p.syl.length >= 2 ? k : 0;
     const slots = units.map(() => h('span', { class: 'slot' }, ''));

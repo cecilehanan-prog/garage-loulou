@@ -44,10 +44,11 @@
     let q = [{ k: easy[0] }];
     const mid = Z.shuffle(old.map(k => ({ k })).concat(fresh.map(k => ({ k, isNew: true }))));
     q = q.concat(mid);
-    q.splice(Math.min(4, q.length), 0, { k: easy[1] });
+    /* moins d'échauffements faciles quand le palier monte */
+    if (Z.pal() === 0) q.splice(Math.min(4, q.length), 0, { k: easy[1] });
     Z.shuffle(fresh).forEach(k => q.push({ k }));
     old.slice(0, 2).forEach(k => q.push({ k }));
-    q.push({ k: easy[2] });
+    if (Z.pal() < 2) q.push({ k: easy[2] });
     return q;
   }
 
@@ -78,11 +79,11 @@
     a === b ? null : h('div', { class: 'question q2' }, `${b} × ${a}`));
 
   function choicesFor(a, b) {
-    const r = a * b, set = new Set();
+    const r = a * b, set = new Set(), nb = Z.pal() >= 1 ? 5 : 3;   // facile : 4 choix, moyen : 6 choix
     const cands = Z.shuffle([a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b, r + 10, r - 10, r + 1, r - 1, r + 2]);
     const swap = Number(String(r).split('').reverse().join(''));
     if (r >= 10 && r % 10 !== 0 && swap !== r) cands.unshift(swap);          // inversion de chiffres (56/65), fréquente chez les dys
-    for (const c of cands) { if (c > 0 && c !== r) set.add(c); if (set.size >= 3) break; }
+    for (const c of cands) { if (c > 0 && c !== r) set.add(c); if (set.size >= nb) break; }
     return Z.shuffle([r, ...set]);
   }
 
@@ -138,14 +139,13 @@
       const turbo = h('div', { class: 'streak-turbo' }, streak >= 3 ? `🔥 TURBO × ${streak} !` : '');
       const qText = `${dit2(a, b)} ?`;
       const grid = h('div', { class: 'choices' });
-      choicesFor(a, b).forEach(v => {
-        const btn = h('button', {
-          class: 'choice', onclick: () => {
-            if (btn.classList.contains('bad') || grid.dataset.done) return;
+      /* réponse donnée (bouton en facile/moyen, pavé de chiffres en expert) */
+      const answer = (v, btn) => {
+            if ((btn && btn.classList.contains('bad')) || grid.dataset.done) return;
             tries++;
             if (v === r) {
               grid.dataset.done = '1';
-              btn.classList.add('good'); Z.sfx.good();
+              if (btn) btn.classList.add('good'); Z.sfx.good();
               const fast = Date.now() - t0 < 5000;
               if (tries === 1) { streak++; if (!(item.k in firstTry)) firstTry[item.k] = true; }
               else { streak = 0; }
@@ -157,19 +157,36 @@
             } else {
               errors++; streak = 0;
               if (!(item.k in firstTry)) firstTry[item.k] = false;
-              btn.classList.add('bad'); Z.sfx.bad();
+              if (btn) btn.classList.add('bad'); Z.sfx.bad();
               // la même question reviendra un peu plus tard
               queue.splice(Math.min(2, queue.length), 0, { k: item.k });
               queue.splice(Math.min(5, queue.length), 0, { k: item.k });
               help(a, b, r, grid, tries);
             }
-          }
-        }, String(v));
-        grid.appendChild(btn);
-      });
+      };
+      let pad = null;
+      if (Z.pal() === 2) {
+        /* palier expert : il tape le résultat lui-même */
+        let entry = '';
+        const disp = h('div', { class: 'entree' }, '?');
+        const keys = h('div', { class: 'pave' }, ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✅'].map(k => h('button', { class: 'touche' + (k === '✅' ? ' ok' : ''), onclick: () => {
+          if (grid.dataset.done) return;
+          Z.sfx.tap();
+          if (k === '⌫') entry = entry.slice(0, -1);
+          else if (k === '✅') { if (entry) { const v = Number(entry); entry = ''; disp.textContent = '?'; answer(v, null); } return; }
+          else if (entry.length < 3) entry += k;
+          disp.textContent = entry || '?';
+        } }, k)));
+        pad = h('div', { class: 'col' }, disp, keys);
+      } else {
+        choicesFor(a, b).forEach(v => {
+          const btn = h('button', { class: 'choice', onclick: () => answer(v, btn) }, String(v));
+          grid.appendChild(btn);
+        });
+      }
       shell.root.append(track, turbo,
         h('div', { class: 'card center' }, h('div', { class: 'row', style: { justifyContent: 'center' } }, vu2(a, b), Z.ear(qText))),
-        grid, h('div', { id: 'help' }));
+        pad || grid, h('div', { id: 'help' }));
       moveMe();
       Z.speak(qText);
     };

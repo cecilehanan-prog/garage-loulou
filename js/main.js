@@ -11,7 +11,7 @@ Z.go = function (name, ...args) {
   window.scrollTo(0, 0);
   Z.current = name;
   Z.applySpeed();
-  Z.narrator = { mots: 'doudou', tables: 'moezeh', problemes: 'isis', devoirs: 'franklin', devoir: 'franklin', archives: 'franklin' }[name] || 'loulou';
+  Z.narrator = { mots: 'doudou', tables: 'moezeh', problemes: 'isis', devoirs: 'franklin', devoir: 'franklin', archives: 'franklin', chambre: 'loulou' }[name] || 'loulou';
   Z.screens[name](...args);
 };
 
@@ -56,8 +56,12 @@ Z.endScreen = function (shell, { medal, title, eclairs, xp, lines = [], kind, ag
   if (leveled) setTimeout(() => {
     Z.sfx.win(); Z.confetti(200);
     const t = `Niveau ${Z.levelInfo().lvl} ! Tu montes de niveau, champion ! Ta ${Z.modelOf().name} roule maintenant à ${Z.speed()} kilomètres heure !${(ZDATA.models.find(m => m.lvl === Z.levelInfo().lvl) || null) ? ` Nouveau au garage : la ${ZDATA.models.find(m => m.lvl === Z.levelInfo().lvl).name} !` : ''}`;
-    Z.speak(t);
-    Z.modal(h('div', { class: 'col center' }, h('div', { class: 'big-reward' }, '⭐'), h('h2', null, t),
+    const L = Z.levelInfo().lvl, pal = Z.PALIERS.find(p => p.from === L && p.from > 1);
+    const news = (Z.chambreNews ? Z.chambreNews(L) : []);
+    const t2 = (pal && (!Z.state.settings.palier || Z.state.settings.palier === 'auto') ? ` Tu passes au palier ${pal.name} : les jeux deviennent plus durs !` : '')
+      + (news.length ? ` Dans ta chambre, tu débloques : ${news.join(', ')} !` : '');
+    Z.speak(t + t2);
+    Z.modal(h('div', { class: 'col center' }, h('div', { class: 'big-reward' }, '⭐'), h('h2', null, t), t2 ? h('p', { style: { fontWeight: 700 } }, t2.trim()) : null,
       h('button', { class: 'btn gold wide', onclick: (e) => e.target.closest('.modal').remove() }, 'Trop bien !')));
   }, 1800);
 };
@@ -82,6 +86,7 @@ Z.screens.home = function () {
 
   const hello = h('div', { class: 'hello' },
     h('h1', null, `Salut ${st.name} ! `),
+    h('div', { class: 'palier-row' }, Z.palChip(), h('span', { class: 'hint' }, Z.pal() < 2 && !Z.state.settings.palier || (Z.state.settings.palier === 'auto' && Z.pal() < 2) ? ` · ${Z.PALIERS[Z.pal() + 1].name} au niveau ${Z.PALIERS[Z.pal() + 1].from}` : '')),
     h('div', { class: 'lvl' }, h('span', null, `Niveau ${lv.lvl}`), h('div', { class: 'bar' }, h('i', { style: { width: Math.round(lv.cur / lv.need * 100) + '%' } })), h('span', null, '⭐')),
     h('div', { class: 'speedo' }, `🛴 Ta ${Z.modelOf().name} roule à `, h('b', null, `${Z.speed()} km/h`), Z.speedOf(lv.lvl) < 45 ? h('span', { class: 'hint' }, ` · niveau ${lv.lvl + 1} : ${Z.speedOf(lv.lvl + 1) + Z.modelOf().bonus} km/h`) : h('span', { class: 'hint' }, ' · vitesse maximum ! 🔥')));
 
@@ -108,7 +113,8 @@ Z.screens.home = function () {
     world('w3', 'isis', 'Détective Isis', 'Résous les problèmes comme un pro', 'problemes'),
     world('w4', 'loulou', 'Le Permis Trottinette', 'Avec Loulou : la route, le marché…', 'route'),
     (() => { const n = Z.devoirsLeft();
-      return world('w5', 'franklin', 'Mes devoirs', 'Avec Franklin : les devoirs de l’agenda', 'devoirs', n ? `${n} à faire` : '✅'); })());
+      return world('w5', 'franklin', 'Mes devoirs', 'Avec Franklin : les devoirs de l’agenda', 'devoirs', n ? `${n} à faire` : '✅'); })(),
+    world('w6', 'loulou', 'Ma chambre', 'Avec Loulou : aménage et range ta chambre', 'chambre', Z.chambreBadge()));
 
   const nav = h('div', { class: 'nav' },
     h('button', { class: 'on' }, h('span', null, '🏠'), 'Monde'),
@@ -299,6 +305,9 @@ Z.screens.parent = function () {
   name.addEventListener('change', () => { st.name = name.value.trim() || 'Zouzou'; Z.save(); });
   const snd = h('select', null, h('option', { value: '1', selected: st.settings.sound }, 'Sons activés'), h('option', { value: '0', selected: !st.settings.sound }, 'Sons coupés'));
   snd.addEventListener('change', () => { st.settings.sound = snd.value === '1'; Z.save(); });
+  const palSel = h('select', null, [['auto', 'Automatique (suit son niveau)'], ['facile', '🟢 Toujours facile'], ['moyen', '🟠 Toujours moyen'], ['expert', '🔴 Toujours expert']]
+    .map(([v, l]) => h('option', { value: v, selected: (st.settings.palier || 'auto') === v }, l)));
+  palSel.addEventListener('change', () => { st.settings.palier = palSel.value; Z.save(); });
   const cartoon = h('select', null, h('option', { value: '1', selected: st.settings.cartoon !== false }, 'Voix de Loulou : dessin animé'), h('option', { value: '0', selected: st.settings.cartoon === false }, 'Voix de Loulou : normale'));
   cartoon.addEventListener('change', () => { st.settings.cartoon = cartoon.value === '1'; Z.save(); Z.speak('Miaou ! Coucou, c\'est moi, Loulou !'); });
 
@@ -320,6 +329,7 @@ Z.screens.parent = function () {
     h('div', { class: 'card' },
       h('h3', null, '⚙️ Réglages'),
       h('label', null, 'Prénom affiché'), name,
+      h('label', null, 'Difficulté des jeux'), palSel, h('p', { class: 'small-note' }, 'Automatique : facile aux niveaux 1 à 3, moyen de 4 à 6, expert à partir de 7.'),
       h('label', null, 'Vitesse de la voix'), rate, snd, cartoon,
       h('div', { style: { marginTop: '14px' } }, h('button', {
         class: 'btn ghost wide', onclick: () => { if (confirm('Effacer toute la progression ? (irréversible)')) { Z.reset(); Z.go('home'); } }

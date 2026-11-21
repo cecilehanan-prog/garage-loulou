@@ -144,7 +144,7 @@
     const full = (p) => { let k = 0; return p.t.replace(/¤/g, () => { const b = p.b[k++]; return b[0] + b[1]; }); };
 
     const ask = () => {
-      if (n >= steps.length) return reward(shell, it, 20, [`${steps.length} verbes accordés`, errors ? `${errors} petites erreurs, corrigées` : 'Zéro erreur ! 🔥']);
+      if (n >= steps.length) return reward(shell, it, 20, [`${steps.length} verbes accordés`, errors ? `${errors} petite${errors > 1 ? 's' : ''} erreur${errors > 1 ? 's' : ''}, corrigée${errors > 1 ? 's' : ''}` : 'Zéro erreur ! 🔥']);
       const { pi, bi } = steps[n], p = it.phrases[pi], b = p.b[bi];
       shell.clear(); shell.setSteps(steps.length, n);
       let tries = 0;
@@ -676,7 +676,7 @@
       Z.speak(t);
     };
     const ask = () => {
-      if (n >= list.length) return reward(shell, it, 15, [`${list.length} verbes rangés`, errors ? `${errors} petites erreurs, corrigées` : 'Zéro erreur ! 🔥']);
+      if (n >= list.length) return reward(shell, it, 15, [`${list.length} verbes rangés`, errors ? `${errors} petite${errors > 1 ? 's' : ''} erreur${errors > 1 ? 's' : ''}, corrigée${errors > 1 ? 's' : ''}` : 'Zéro erreur ! 🔥']);
       shell.clear(); shell.setSteps(list.length, n);
       const cur = list[n], [v, g] = cur;
       let tries = 0;
