@@ -523,3 +523,20 @@ button { font-family: inherit; color: inherit; letter-spacing: inherit; cursor: 
 .etag.tiroir { background: #e9d3b0; border-style: dashed; }
 .etag-n { font-weight: 700; } .etag-pile { font-size: 1.4em; min-height: 1.2em; }
 .etag.bad { background: #fee2e2; } .etag.hint-good { border-color: #16a34a; box-shadow: 0 0 0 4px #bbf7d0; animation: pulse 1s ease-in-out infinite; }
+
+/* ---- Devoirs : mesures, conjugaison ---- */
+.grille.mesures td, .grille.mesures th { width: 42px; height: 34px; }
+.grille.mesures th { border: 2px solid #9ca3af; font-size: 14px; color: var(--ink); background: #f3ead2; }
+.grille.mesures th.tap, .grille.mesures td { cursor: pointer; }
+.grille.mesures th.hl { background: #bbf7d0; animation: pulse 1s ease-in-out infinite; }
+.grille.mesures td.virg { position: relative; border-right: 4px solid #dc2626; }
+.grille.mesures td.virg::after { content: ','; position: absolute; right: -9px; bottom: -4px; color: #dc2626; font-size: 26px; line-height: 1; }
+.chiffre-u { color: #fff; background: #2563eb; border-radius: 6px; padding: 0 4px; }
+.question.q-mes { font-size: 1.45em; letter-spacing: .02em; }
+.zero-btn { display: block; width: 120px; margin: 0 auto; font-size: 2.2em; min-height: 70px; }
+.card.conj { display: grid; grid-template-columns: max-content 1fr; column-gap: .9em; row-gap: 10px; align-items: baseline; text-align: left; font-size: 1.25em; }
+.conj-l { display: contents; }
+.conj-l b { color: #1d4ed8; font-size: 1.1em; }
+.conj-l .conj-p { font-size: 1em; }
+.conj-p { color: var(--soft); }
+@media print { #print .p-grille th { border: 1px solid #000; width: 30px; } }

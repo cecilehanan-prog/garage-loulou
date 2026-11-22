@@ -48,7 +48,7 @@
     Z.endScreen(shell, { medal: '📚', title: isOld() ? 'Révision terminée !' : 'Exercice terminé !', eclairs, xp: eclairs, lines, kind: 'devoirs', detail: D().id + ':' + it.id, again: back, againLabel: '📚 Mes devoirs' });
   }
 
-  const ICO = { verbes: '✏️', sujet: '🟥', mathador: '🔢', poesie: '📜', suite: '🧮', mots: '🔤', groupes: '📘' };
+  const ICO = { verbes: '✏️', sujet: '🟥', mathador: '🔢', poesie: '📜', suite: '🧮', mots: '🔤', groupes: '📘', table: '✖️', phrases: '🧩', conjug: '🔁', mesures: '📏' };
   const itemBtn = (it, s, wid) => h('button', { class: 'devoir' + (s.done[it.id] ? ' fait' : ''), onclick: () => { Z.sfx.vroum(); Z.go('devoir', it.id, wid); } },
     h('span', { class: 'd-ico' }, s.done[it.id] ? '✅' : ICO[it.type]),
     h('span', { class: 'grow' }, it.titre, h('small', null, it.pour)),
@@ -104,7 +104,7 @@
     week = findWeek(wid);
     const it = D().items.find(i => i.id === id);
     const shell = Z.shell({ title: it.titre });
-    ({ verbes, sujet, mathador, poesie, suite, mots, groupes })[it.type](shell, it);
+    ({ verbes, sujet, mathador, poesie, suite, mots, groupes, table, phrases, conjug, mesures })[it.type](shell, it);
   };
 
   /* ---------- VERBES À ACCORDER ---------- */
@@ -250,8 +250,13 @@
   }
 
   /* ---------- MATHADOR ---------- */
-  function mathador(shell, it) {
+  /* la cible n'est pas écrite dans l'agenda : Jasmin (ou Maman) la tape une fois */
+  const cibleOf = (it, wid) => it.cible || ((storeOf(wid).cible || {})[it.id]);
+  function mathador(shell, it0) {
     const s = store();
+    const c = cibleOf(it0, D().id);
+    if (!c) return cibleSetup(shell, it0);
+    const it = Object.assign({}, it0, { cible: c });
     let tiles, log, history, sel, op;
     const reset = () => { tiles = it.nombres.map((v, i) => ({ v, id: i })); log = []; history = []; sel = null; op = null; };
     reset();
@@ -313,6 +318,26 @@
     Z.speak(t);
   }
 
+  function cibleSetup(shell, it) {
+    shell.clear(); shell.setSteps(0, 0);
+    let entry = '';
+    const disp = h('div', { class: 'entree' }, '?');
+    const t = 'Quel est le nombre à atteindre ? Il est écrit au tableau ou dans ton cahier. Demande à Maman si tu ne sais pas. Tape-le ici.';
+    shell.root.append(h('h2', null, '🔢 ' + it.titre), Z.loulouSays(t),
+      h('div', { class: 'card center col' }, h('div', { class: 'hint' }, 'Les nombres : ' + it.nombres.join(' · ')), h('div', { class: 'hint' }, '🎯 Le nombre à atteindre :'), disp),
+      h('div', { class: 'pave' }, ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✅'].map(k => h('button', { class: 'touche' + (k === '✅' ? ' ok' : ''), onclick: () => {
+        Z.sfx.tap();
+        if (k === '⌫') entry = entry.slice(0, -1);
+        else if (k === '✅') {
+          if (!entry) return;
+          const s = store(); s.cible = s.cible || {}; s.cible[it.id] = Number(entry); Z.save();
+          return Z.go('devoir', it.id, isOld() ? D().id : undefined);
+        } else if (entry.length < 7) entry += k;
+        disp.textContent = entry ? Number(entry).toLocaleString('fr-FR') : '?';
+      } }, k))),
+      h('button', { class: 'btn ghost wide', onclick: back }, '⬅️ Mes devoirs'));
+  }
+
   /* ---------- POÉSIE ---------- */
   const norm = (w) => w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
   const tokens = (t) => t.replace(/[’']/g, ' ').replace(/-/g, ' ').split(/\s+/).map(norm).filter(Boolean);
@@ -330,7 +355,7 @@
     if (!p.texte) return null;
     let lines = p.texte.split('\n').map(l => l.trim());
     while (lines.length && !lines[lines.length - 1]) lines.pop();
-    if (p.part === '23') {
+    if (p.part === '23' && !it.entier) {
       const real = lines.map((l, i) => l ? i : -1).filter(i => i >= 0);
       const keep = real[Math.ceil(real.length * 2 / 3) - 1];
       lines = lines.slice(0, keep + 1);
@@ -705,6 +730,277 @@
     intro();
   }
 
+  /* ---------- UNE TABLE : jouée dans le Grand Prix avec Moezeh ---------- */
+  function table(shell, it) {
+    const wk = D(), old = isOld();
+    Z.go('tables', {
+      table: it.table,
+      onEnd: () => { storeOf(wk.id).done[it.id] = true; Z.save(); },
+      back: () => Z.go('devoirs', old ? wk.id : undefined)
+    });
+  }
+
+  /* ---------- CONSTRUIRE DES PHRASES (groupe sujet) : rien à écrire, on choisit ---------- */
+  function phrases(shell, it) {
+    const s = store();
+    const res = s.res[it.id] = s.res[it.id] || {};
+    const rounds = it.sortes;
+    let n = 0, errors = 0;
+    const gsLine = (gs, fin) => h('div', { class: 'phrase' }, h('span', { class: 'is-s' }, gs), ' ', fin ? h('span', null, fin) : h('span', { class: 'trou' }, '…'));
+    const intro = () => {
+      shell.clear(); shell.setSteps(rounds.length, 0);
+      const t = `${it.consigne} Le groupe sujet, c’est qui fait l’action. Il est souvent au début de la phrase, avant le verbe. Tu vas fabriquer 3 phrases avec des boutons, puis tu les recopieras dans ton cahier.`;
+      shell.root.append(h('h2', null, '🧩 ' + it.titre), Z.loulouSays(t),
+        h('div', { class: 'card rule' }, rounds.map(r => h('div', null, h('b', null, r.nom), ' : ', h('span', { class: 'is-s' }, r.ex)))),
+        h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.vroum(); ask(); } }, 'C’est parti ! ➡️'));
+    };
+    const ask = () => {
+      if (n >= rounds.length) return bilan();
+      const r = rounds[n];
+      shell.clear(); shell.setSteps(rounds.length, n);
+      let tries = 0;
+      const tip = h('div', { class: 'tip', style: { display: 'none' } });
+      const others = rounds.filter(x => x !== r).map(x => ({ gs: x.sujets[Z.rand(x.sujets.length)][0], k: x }));
+      const opts = Z.shuffle(r.sujets.map(([gs]) => ({ gs, k: r })).concat(others));
+      const grid = h('div', { class: 'choices une-col' }, opts.map(o => {
+        const b = h('button', { class: 'choice mot', onclick: () => {
+          if (b.classList.contains('bad') || grid.dataset.done) return;
+          tries++;
+          if (o.k === r) { grid.dataset.done = '1'; b.classList.add('good'); Z.sfx.good(); Z.speak(`Oui ! ${o.gs}, c’est ${r.nom}.`, { natural: true }).then(() => finPhrase(r, o.gs)); return; }
+          errors++; b.classList.add('bad'); Z.sfx.bad();
+          const t = `« ${o.gs} », c’est ${o.k.nom}. Ici, on cherche ${r.nom}. ${r.regle}`;
+          if (tries >= 2) [...grid.children].forEach((x, i) => { if (opts[i].k === r) x.classList.add('hint-good'); });
+          tip.style.display = ''; tip.textContent = '💡 ' + t; Z.speak((tries >= 2 ? '' : 'Pas grave, essaie encore. ') + t);
+        } }, o.gs);
+        return b;
+      }));
+      const t = `Phrase ${n + 1}. Le groupe sujet doit être ${r.nom}. ${r.regle} Choisis ton groupe sujet.`;
+      shell.root.append(h('h2', null, `Phrase ${n + 1} : ${r.nom}`), Z.loulouSays(t),
+        h('div', { class: 'hint center' }, 'Choisis ton groupe sujet :'), grid, tip);
+    };
+    const finPhrase = (r, gs) => {
+      shell.clear(); shell.setSteps(rounds.length, n);
+      const fins = r.sujets.find(x => x[0] === gs)[1];
+      const t = `${gs}… Que fait ${r.k === 'GN' || r.k === 'INF' ? 'ton groupe sujet' : 'ton sujet'} ? Choisis la fin de ta phrase.`;
+      shell.root.append(h('h2', null, 'Termine ta phrase'),
+        h('div', { class: 'card row' }, gsLine(gs)), Z.loulouSays(t),
+        h('div', { class: 'choices une-col' }, fins.map(f => h('button', { class: 'choice mot', onclick: () => {
+          Z.sfx.good();
+          res[r.k] = { gs, fin: f }; Z.save();
+          const phrase = `${gs} ${f}`;
+          shell.clear();
+          const t2 = `Ta phrase : ${phrase} Le groupe sujet, c’est « ${gs} » : c’est ${r.nom}.`;
+          shell.root.append(h('h2', null, '✨ Ta phrase'), h('div', { class: 'card row' }, gsLine(gs, f), Z.ear(phrase, { natural: true })),
+            h('div', { class: 'tip' }, `Le groupe sujet (souligné en bleu) est ${r.nom}.`),
+            h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.vroum(); n++; ask(); } }, n + 1 < rounds.length ? 'Phrase suivante ➡️' : 'Voir mes 3 phrases ➡️'));
+          Z.speak(t2, { natural: true });
+        } }, f))));
+    };
+    const bilan = () => {
+      shell.clear(); shell.setSteps(rounds.length, rounds.length);
+      const t = 'Voici tes 3 phrases. Recopie-les dans ton cahier, et souligne le groupe sujet en bleu !';
+      shell.root.append(h('h2', null, '📝 Mes 3 phrases'), Z.loulouSays(t),
+        h('div', { class: 'card col' }, rounds.map((r, i) => res[r.k] ? h('div', null, h('div', { class: 'hint' }, `${i + 1}. ${r.nom}`), gsLine(res[r.k].gs, res[r.k].fin)) : null)),
+        h('button', { class: 'btn green wide', onclick: () => reward(shell, it, 15, ['3 phrases construites', errors ? `${errors} petite${errors > 1 ? 's' : ''} erreur${errors > 1 ? 's' : ''}, corrigée${errors > 1 ? 's' : ''}` : 'Zéro erreur ! 🔥', '✍️ À recopier dans le cahier']) }, '✅ Je les ai recopiées'));
+    };
+    intro();
+  }
+
+  /* ---------- CONJUGAISON : la leçon lue, puis on choisit la bonne forme ---------- */
+  const PRON = ['je', 'tu', 'il, elle, on', 'nous', 'vous', 'ils, elles'];
+  const PRON1 = ['je', 'tu', 'il', 'nous', 'vous', 'ils'];
+  function conjug(shell, it) {
+    const s = store();
+    const res = s.res[it.id] = s.res[it.id] || {};
+    let vi = 0, errors = 0;
+    const tableau = (v, cur) => h('div', { class: 'card col lecon conj' }, v.formes.map((f, i) => h('div', { class: 'conj-l' + (i === cur ? ' cur' : '') },
+      h('span', { class: 'conj-p' }, PRON[i]), ' ', h('b', null, cur === undefined || i !== cur ? f : '…'))));
+    const lecon = () => {
+      if (vi >= it.verbes.length) return reward(shell, it, 20, [it.verbes.map(v => v.inf).join(' et ') + ' au ' + it.temps, errors ? `${errors} petite${errors > 1 ? 's' : ''} erreur${errors > 1 ? 's' : ''}, corrigée${errors > 1 ? 's' : ''}` : 'Zéro erreur ! 🔥']);
+      const v = it.verbes[vi];
+      shell.clear(); shell.setSteps(it.verbes.length * 6, vi * 6);
+      const lu = `Le verbe ${v.inf}, au ${it.temps}. ` + v.formes.map((f, i) => `${PRON1[i]} ${f}`).join(', ') + '. ' + v.astuce;
+      shell.root.append(h('h2', null, `🔁 ${v.inf[0].toUpperCase() + v.inf.slice(1)} (${v.groupe === 1 ? '1er' : v.groupe + 'e'} groupe)`),
+        Z.loulouSays(v.astuce, { speak: false }), tableau(v),
+        h('div', { class: 'row', style: { justifyContent: 'center' } }, Z.ear(lu, { natural: true })),
+        h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.vroum(); quiz(v); } }, 'Je m’entraîne ➡️'));
+      Z.speak(lu, { natural: true });
+    };
+    const quiz = (v) => {
+      const order = Z.shuffle([0, 1, 2, 3, 4, 5]);
+      let q = 0;
+      const next = () => {
+        if (q >= order.length) { vi++; return lecon(); }
+        const p = order[q], good = v.formes[p];
+        shell.clear(); shell.setSteps(it.verbes.length * 6, vi * 6 + q);
+        let tries = 0;
+        const tip = h('div', { class: 'tip', style: { display: 'none' } });
+        const pool = [...new Set(v.formes.concat(v.faux))].filter(x => x !== good);
+        const opts = Z.shuffle([good, ...Z.shuffle(pool).slice(0, 3)]);
+        const grid = h('div', { class: 'choices' }, opts.map(o => {
+          const b = h('button', { class: 'choice mot', onclick: () => {
+            if (b.classList.contains('bad') || grid.dataset.done) return;
+            tries++;
+            if (o === good) {
+              grid.dataset.done = '1'; b.classList.add('good'); Z.sfx.good();
+              res[v.inf + p] = tries; Z.save(); q++;
+              Z.speak(`${PRON1[p]} ${good}`, { natural: true }).then(() => setTimeout(next, 400)); return;
+            }
+            errors++; b.classList.add('bad'); Z.sfx.bad();
+            if (tries >= 2) [...grid.children].forEach((x, i) => { if (opts[i] === good) x.classList.add('hint-good'); });
+            tip.style.display = ''; tip.textContent = '💡 ' + v.astuce;
+            Z.speak((tries >= 2 ? `Il faut écrire ${good}. ` : 'Pas grave, essaie encore. ') + v.astuce);
+          } }, o);
+          return b;
+        }));
+        shell.root.append(h('h2', null, `${v.inf} au ${it.temps}`),
+          h('div', { class: 'card center row', style: { justifyContent: 'center' } }, h('div', { class: 'question' }, `${PRON[p]} …`), Z.ear(`${v.inf}, avec ${PRON1[p]}`)),
+          h('div', { class: 'hint center' }, 'Choisis la bonne forme :'), grid, tip);
+        Z.speak(`${v.inf}, avec ${PRON1[p]} ?`);
+      };
+      next();
+    };
+    lecon();
+  }
+
+  /* ---------- MESURES DE LONGUEUR : le tableau de conversion ---------- */
+  const COLS = ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm'];
+  const NOMS = ['kilomètre', 'hectomètre', 'décamètre', 'mètre', 'décimètre', 'centimètre', 'millimètre'];
+  const parleMesure = (q) => q.replace(/(\d) (\d)/g, '$1$2').replace(/([\d,]+) (km|hm|dam|m|dm|cm|mm)\b/g, (_, n, u) =>
+    n.replace(',', ' virgule ') + ' ' + NOMS[COLS.indexOf(u)] + (Number(n.replace(',', '.')) >= 2 ? 's' : ''));
+  const nomU = (u) => NOMS[COLS.indexOf(u)] + 's';
+  /* les chiffres de chaque partie dans les colonnes */
+  const placer = (cells, [nb, u]) => {
+    const [ent, dec = ''] = nb.split(','), ui = COLS.indexOf(u);
+    ent.split('').reverse().forEach((d, i) => { cells[ui - i] = d; });
+    dec.split('').forEach((d, i) => { cells[ui + 1 + i] = d; });
+  };
+  /* ce qu'il faut ajouter (des 0) et la réponse lue dans le tableau */
+  function conversion(l) {
+    const cells = {}; l.parts.forEach(p => placer(cells, p));
+    const idx = Object.keys(cells).map(Number), first = Math.min(...idx), last = Math.max(...idx), t = COLS.indexOf(l.vers);
+    const zeros = []; for (let i = first; i <= t; i++) if (cells[i] === undefined) zeros.push(i);
+    for (let i = first; i <= last; i++) if (cells[i] === undefined && i > t) zeros.push(i);
+    const full = Object.assign({}, cells); zeros.forEach(i => { full[i] = '0'; });
+    let ent = '', dec = '';
+    for (let i = first; i <= Math.max(t, last); i++) (i <= t ? ent += full[i] : dec += full[i]);
+    dec = dec.replace(/0+$/, '');
+    return { cells, full, zeros, virgule: t < last && dec ? t : null, rep: ent + (dec ? ',' + dec : ''), first, t };
+  }
+  const normRep = (x) => x.replace(/\s/g, '').replace(/^0+(?=\d)/, '').replace(/(,\d*?)0+$/, '$1').replace(/,$/, '');
+  Z._conversion = conversion; /* pour les vérifications */
+
+  function mesures(shell, it) {
+    const s = store();
+    const res = s.res[it.id] = s.res[it.id] || {};
+    let errors = 0;
+    const L = it.lignes;
+    /* le tableau, comme sur la feuille : une ligne par mesure */
+    const tab = (cur, show, opts = {}) => h('div', { class: 'grille-wrap' }, h('table', { class: 'grille mesures' },
+      h('tr', null, COLS.map((c, ci) => h('th', { class: (opts.tapCol ? 'tap' : '') + (opts.hl === ci ? ' hl' : ''), onclick: opts.tapCol ? () => opts.tapCol(ci) : null }, c))),
+      L.map((l, li) => {
+        const cells = li === cur ? show : (res[li] ? conversion(l).full : {});
+        const v = li === cur ? opts.virgule : (res[li] ? conversion(l).virgule : null);
+        return h('tr', { class: li === cur ? 'row-on' : '' }, COLS.map((c, ci) => h('td', {
+          class: [(cells[ci] !== undefined ? 'rempli' : ''), (v === ci ? 'virg' : ''), (opts.zero === ci ? 'cur' : '')].join(' ').trim(),
+          onclick: opts.tapCol ? () => opts.tapCol(ci) : null
+        }, cells[ci] !== undefined ? cells[ci] : '')));
+      })));
+
+    const intro = () => {
+      shell.clear(); shell.setSteps(L.length, 0);
+      const t = `${it.consigne} Le chiffre des unités va dans la colonne de l’unité. Puis on lit le tableau jusqu’à la colonne qu’on veut, en ajoutant des zéros s’il le faut. Kilo, hecto, déca, mètre, déci, centi, milli.`;
+      shell.root.append(h('h2', null, '📏 ' + it.titre), Z.loulouSays(t), tab(-1, {}),
+        h('div', { class: 'card rule' }, h('div', null, '1️⃣ Le chiffre des ', h('b', null, 'unités'), ' → la colonne de l’unité'),
+          h('div', null, '2️⃣ Des ', h('b', null, '0'), ' dans les cases vides'), h('div', null, '3️⃣ Je lis jusqu’à la colonne demandée')),
+        h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.vroum(); ligne(); } }, 'C’est parti ! ➡️'));
+    };
+
+    const ligne = () => {
+      const li = L.findIndex((_, i) => !res[i]);
+      if (li < 0) return reward(shell, it, 20, [`${L.length} mesures converties`, errors ? `${errors} petite${errors > 1 ? 's' : ''} erreur${errors > 1 ? 's' : ''}, corrigée${errors > 1 ? 's' : ''}` : 'Zéro erreur ! 🔥']);
+      const l = L[li], cv = conversion(l), show = {};
+      let pi = 0;
+      const head = () => h('div', { class: 'card center row', style: { justifyContent: 'center' } },
+        h('div', { class: 'question q-mes' }, `${l.q} = … ${l.vers}`.replace(/(\d|…) (?=\d|[a-z]+\b)/g, '$1\u00a0')), Z.ear(`${parleMesure(l.q)}, égale combien de ${nomU(l.vers)} ?`));
+      /* 1. placer le chiffre des unités de chaque partie */
+      const place = () => {
+        if (pi >= l.parts.length) return zeros();
+        const [nb, u] = l.parts[pi], ent = nb.split(',')[0], unite = ent[ent.length - 1];
+        shell.clear(); shell.setSteps(L.length, li);
+        let tries = 0;
+        const tip = h('div', { class: 'tip', style: { display: 'none' } });
+        const box = h('div');
+        const draw = (hl) => { box.innerHTML = ''; box.append(tab(li, show, { tapCol, hl })); };
+        const tapCol = (ci) => {
+          if (ci === COLS.indexOf(u)) {
+            Z.sfx.good(); placer(show, l.parts[pi]); draw();
+            const t = `Oui ! ${unite} dans les ${nomU(u)}.`;
+            pi++; Z.speak(t).then(() => setTimeout(place, 600)); return;
+          }
+          tries++; errors++; Z.sfx.bad();
+          const t = (m) => `Pas grave. Dans ${m}, l’unité, c’est le ${nomU(u).slice(0, -1)} : le chiffre ${unite} va dans la colonne ${u}.`;
+          tip.style.display = ''; tip.textContent = '💡 ' + t(nb + ' ' + u); Z.speak(t(parleMesure(nb + ' ' + u)));
+          if (tries >= 2) draw(COLS.indexOf(u));
+        };
+        draw();
+        const label = h('span', null, ...nb.split('').map((ch, i) => i === ent.length - 1 ? h('span', { class: 'chiffre-u' }, ch) : ch), ' ' + u);
+        const t = `${parleMesure(l.q)}. Le chiffre des unités de ${parleMesure(nb + ' ' + u)}, c’est ${unite}. Touche la colonne où il va.`;
+        shell.root.append(h('h2', null, `📏 Mesure ${li + 1} sur ${L.length}`), head(),
+          h('div', { class: 'hint center' }, 'Le chiffre des unités de ', h('b', null, label), ' : touche sa colonne'), box, tip);
+        Z.speak(t);
+      };
+      /* 2. les zéros, puis la virgule */
+      const zeros = () => {
+        const todo = cv.zeros.filter(i => show[i] === undefined);
+        if (!todo.length) return virgule();
+        shell.clear(); shell.setSteps(L.length, li);
+        const box = h('div');
+        const i0 = todo[0];
+        box.append(tab(li, show, { zero: i0 }));
+        const t = i0 > cv.t ? 'Il y a une case vide au milieu : on met un 0.' : `On veut des ${nomU(l.vers)}. Il faut remplir les cases vides jusqu’à la colonne ${l.vers}, avec des 0.`;
+        shell.root.append(h('h2', null, '0️⃣ Les zéros'), head(), Z.loulouSays(t), box,
+          h('button', { class: 'touche zero-btn', onclick: () => { Z.sfx.tap(); show[i0] = '0'; zeros(); } }, '0'));
+      };
+      const virgule = () => {
+        if (cv.virgule === null) return lire();
+        shell.clear(); shell.setSteps(L.length, li);
+        const t = `On veut des ${nomU(l.vers)} : la virgule se met juste après la colonne ${l.vers}.`;
+        shell.root.append(h('h2', null, '🔴 La virgule'), head(), Z.loulouSays(t), tab(li, show, { virgule: cv.virgule }),
+          h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.tap(); lire(); } }, 'J’ai compris ➡️'));
+      };
+      /* 3. il lit le tableau et tape la réponse */
+      const lire = () => {
+        shell.clear(); shell.setSteps(L.length, li);
+        let entry = '', tries = 0;
+        const disp = h('div', { class: 'entree' }, '?');
+        const tip = h('div', { class: 'tip', style: { display: 'none' } });
+        const ok = () => {
+          if (!entry) return;
+          if (normRep(entry) === normRep(cv.rep)) {
+            Z.sfx.good(); res[li] = { rep: cv.rep, essais: tries + 1 }; Z.save();
+            Z.speak(`Bravo ! ${parleMesure(l.q)} égale ${parleMesure(cv.rep + ' ' + l.vers)}.`).then(() => setTimeout(ligne, 500)); return;
+          }
+          tries++; errors++; Z.sfx.bad(); entry = ''; disp.textContent = '?';
+          const t = tries >= 2 ? `La réponse, c’est ${cv.rep} ${l.vers}. Tape ${cv.rep}.` : `Pas grave, essaie encore. Lis les chiffres du tableau, de la première case jusqu’à la colonne ${l.vers}${cv.virgule !== null ? ', puis la virgule et ce qui reste' : ''}.`;
+          tip.style.display = ''; tip.textContent = '💡 ' + t; Z.speak(tries >= 2 ? `La réponse, c’est ${parleMesure(cv.rep + ' ' + l.vers)}. Tape ${cv.rep.replace(',', ' virgule ')}.` : t);
+        };
+        shell.root.append(h('h2', null, '👀 Je lis le tableau'), head(), tab(li, show, { virgule: cv.virgule }),
+          h('div', { class: 'row', style: { justifyContent: 'center', alignItems: 'center' } }, disp, h('b', { style: { fontSize: '1.6em' } }, l.vers)), tip,
+          h('div', { class: 'pave' }, ['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', '⌫'].map(k => h('button', { class: 'touche', onclick: () => {
+            Z.sfx.tap();
+            if (k === '⌫') entry = entry.slice(0, -1);
+            else if (k === ',' ? entry && !entry.includes(',') : entry.length < 7) entry += k;
+            disp.textContent = entry || '?';
+          } }, k))),
+          h('button', { class: 'btn green wide', onclick: ok }, '✅ Vérifier'));
+        Z.speak(`Lis le tableau jusqu’à la colonne ${l.vers}, et tape le nombre.`);
+      };
+      place();
+    };
+    L.findIndex((_, i) => !res[i]) > 0 ? ligne() : intro();
+  }
+
   /* ---------- PAGE À IMPRIMER POUR LA MAÎTRESSE ---------- */
   function printSheet() {
     Z.sfx.tap();
@@ -738,8 +1034,19 @@
             return h('td', null, given.has(v) || (r0.fill || {})[v] ? h('span', { class: m ? 'pm-' + m : '' }, String(v)) : '');
           })))),
           it.questions.filter(q => q.rep).map(q => { const qi = it.questions.indexOf(q); return h('p', null, h('b', null, q.q), ' ', (r0.rep || {})[qi] ? q.rep : '……'); })));
+      } else if (it.type === 'phrases') {
+        blocks.push(h('section', null, h('h3', null, it.consigne),
+          it.sortes.map((r, i) => res && res[r.k] ? h('p', null, `${i + 1}. `, h('span', { class: 'ps' }, res[r.k].gs), ' ' + res[r.k].fin, h('i', null, ` (${r.nom})`)) : h('p', null, `${i + 1}. ……`))));
+      } else if (it.type === 'mesures') {
+        blocks.push(h('section', null, h('h3', null, it.consigne),
+          h('table', { class: 'p-grille' }, h('tr', null, COLS.map(c => h('th', null, c))),
+            it.lignes.map((l, li) => { const cv = conversion(l), ok = res && res[li]; return h('tr', null, COLS.map((c, ci) => h('td', null, ok && cv.full[ci] !== undefined ? cv.full[ci] + (cv.virgule === ci ? ',' : '') : ''))); })),
+          it.lignes.map((l, li) => h('p', null, `${l.q} = `, res && res[li] ? h('b', null, res[li].rep) : '……', ` ${l.vers}`))));
+      } else if (it.type === 'conjug') {
+        blocks.push(h('section', null, h('h3', null, it.consigne),
+          it.verbes.map(v => h('p', null, h('b', null, v.inf + ' : '), v.formes.map((f, i) => `${PRON1[i]} ${f}`).join(', ')))));
       } else if (it.type === 'mathador') {
-        blocks.push(h('section', null, h('h3', null, `Mathador : ${it.nombres.join(' / ')} → ${it.cible}`),
+        blocks.push(h('section', null, h('h3', null, `Mathador : ${it.nombres.join(' / ')} → ${cibleOf(it, d.id) || '?'}`),
           res ? res.log.map(l => h('p', null, l)) : h('p', null, '(pas encore fait)'),
           res ? h('p', null, h('b', null, `Résultat : ${res.best.toLocaleString('fr-FR')}`)) : null));
       }

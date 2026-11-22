@@ -27,7 +27,15 @@
   const EASY = ['2x3', '2x4', '5x4', '5x3', '2x10', '5x10', '3x10', '4x10', '2x5', '5x5', '3x3', '4x2'];
   const GOAL = 10;
 
-  Z.screens.tables = function () { start(); };
+  /* opts (devoirs) : { table: 4, onEnd, back } → on ne joue QUE cette table */
+  Z.screens.tables = function (opts) { start(opts || {}); };
+
+  /* Une seule table (devoirs) : ses 10 résultats mélangés, les nouveaux sont d'abord montrés */
+  function buildFocus(T) {
+    const st = Z.state.facts, keys = [];
+    for (let b = 1; b <= 10; b++) { const k = Z.factKey(T, b); if (!keys.includes(k)) keys.push(k); }
+    return Z.shuffle(keys).map(k => ({ k, isNew: !st[k] }));
+  }
 
   function buildQueue() {
     const st = Z.state.facts;
@@ -87,9 +95,11 @@
     return Z.shuffle([r, ...set]);
   }
 
-  function start() {
-    const shell = Z.shell({ title: 'Grand Prix' });
-    let queue = buildQueue();
+  function start(opts) {
+    const T = opts.table;
+    const mk = () => T ? buildFocus(T) : buildQueue();
+    const shell = Z.shell({ title: T ? 'Table de ' + T : 'Grand Prix' });
+    let queue = mk();
     let correct = 0, errors = 0, streak = 0, bonus = 0;
     const firstTry = {};
 
@@ -100,8 +110,9 @@
 
     const intro = () => {
       shell.clear(); shell.setSteps(GOAL, 0);
-      const t = `Salut champion, moi c'est Moezeh, ton coach des maths ! Bienvenue au Grand Prix des tables. Dix bonnes réponses et tu passes la ligne d'arrivée. Prends ton temps, il n'y a pas de chrono.`;
-      shell.root.append(h('h2', null, '🏁 Grand Prix des Tables'), Z.loulouSays(t, { speak: false }),
+      const t = T ? `Salut champion, c'est Moezeh ! Pour tes devoirs, on révise la table de ${T}. Dix bonnes réponses et tu passes la ligne d'arrivée. Prends ton temps, il n'y a pas de chrono.`
+        : `Salut champion, moi c'est Moezeh, ton coach des maths ! Bienvenue au Grand Prix des tables. Dix bonnes réponses et tu passes la ligne d'arrivée. Prends ton temps, il n'y a pas de chrono.`;
+      shell.root.append(h('h2', null, T ? `🏁 La table de ${T}` : '🏁 Grand Prix des Tables'), Z.loulouSays(t, { speak: false }),
         h('div', { class: 'card center' }, h('div', { class: 'emoji-big' }, '🛴💨🏁')),
         h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.vroum(); ask(); } }, '🚦 3, 2, 1… Partez !'));
       Z.speak(t);
@@ -109,7 +120,7 @@
 
     const ask = () => {
       if (correct >= GOAL) return finish();
-      if (!queue.length) queue = buildQueue().map(x => ({ k: x.k }));
+      if (!queue.length) queue = mk().map(x => ({ k: x.k }));
       const item = queue.shift();
       let [a, b] = item.k.split('x').map(Number);
       if (Math.random() < .5) [a, b] = [b, a];
@@ -214,10 +225,12 @@
       Z.endScreen(shell, {
         medal, kind: 'tables', eclairs: 12 + bonus, xp: 20 + Math.max(0, 10 - errors * 2),
         title: errors <= 1 ? 'Victoire au Grand Prix !' : 'Ligne d\'arrivée franchie !',
-        lines: [`${errors} erreur(s) · ${bonus} turbo(s)`, `Tables 6-9 connues par cœur : ${known} / ${TARGET.length}`],
+        lines: [`${errors} erreur${errors > 1 ? 's' : ''} · ${bonus} turbo${bonus > 1 ? 's' : ''}`, T ? `Table de ${T} : bien joué !` : `Tables connues par cœur : ${known} / ${TARGET.length}`],
         detail: Object.keys(firstTry).join(','),
-        again: () => Z.go('tables')
+        again: opts.back || (() => Z.go('tables')),
+        againLabel: opts.back ? '📚 Mes devoirs' : undefined
       });
+      if (opts.onEnd) opts.onEnd();
     };
 
     intro();
