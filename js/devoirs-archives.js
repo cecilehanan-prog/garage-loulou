@@ -7,6 +7,93 @@
    ========================================================= */
 window.ZARCHIVES = [
   {
+    id: 'mots-S1-S7', titre: 'Révision des mots S1 à S7', revision: true,
+    items: [
+      { id: 'S1', type: 'mots', pour: 'Mots 1 à 5', titre: 'Mots S1', mots: [
+        { id: 'dautrepart', s: "d'[au]-tre -par(t)", e: '↔️', ph: "J'aime le foot. D'autre part, j'adore la trottinette.",
+          hint: "D'autre part : D apostrophe, autre avec A U, puis part avec un T muet." },
+        { id: 'assurement', s: 'a-[ss]u-ré-m[en](t)', e: '👍', ph: "Loulou est assurément le chat le plus gourmand.",
+          hint: "Assurément : deux S pour faire le son s, un é avec un accent, et M E N T à la fin." },
+        { id: 'aurevoir', s: '[au] -re-voir', e: '👋', ph: "Au revoir Maman, je pars à l'école !",
+          hint: "Au revoir : deux mots. Au avec A U, puis revoir." },
+        { id: 'dabord', s: "d'a-bor(d)", e: '1️⃣', ph: "D'abord je mets mon casque, ensuite je roule.",
+          hint: "D'abord : D apostrophe, puis abord avec un D muet à la fin." },
+        { id: 'absolument', s: 'ab-so-lu-m[en](t)', e: '💯', ph: "Je veux absolument gagner la course.",
+          hint: "Absolument : ab, so, lu, puis M E N T." }
+      ] },
+      { id: 'S2', type: 'mots', pour: 'Mots 6 à 10', titre: 'Mots S2', mots: [
+        { id: 'daccord', s: "d'a-[cc]or(d)", e: '🤝', ph: "D'accord, on joue aux cartes après les devoirs.",
+          hint: "D'accord : D apostrophe, deux C, et un D muet à la fin." },
+        { id: 'actuellement', s: 'ac-tu-e-[ll]e-m[en](t)', e: '⏱️', ph: "Actuellement, je suis en CM1.",
+          hint: "Actuellement : actuel, avec deux L, puis M E N T." },
+        { id: 'afin', s: 'a-f[in]', e: '🎯', ph: "Je m'entraîne afin de rouler plus vite.",
+          hint: "Afin : a, puis fin avec I N." },
+        { id: 'dailleurs', s: "d'[ai]-[ll]eur(s)", e: '💡', ph: "J'aime les chats, d'ailleurs j'en ai deux.",
+          hint: "D'ailleurs : D apostrophe, A I, deux L, puis E U R et un S muet." },
+        { id: 'ainsi', s: '[ain]-si', e: '👉', ph: "On tourne la poignée ainsi, et la trottinette avance.",
+          hint: "Ainsi : le son in s'écrit A I N, puis si." }
+      ] },
+      { id: 'S3', type: 'mots', pour: 'Mots 11 à 15', titre: 'Mots S3', mots: [
+        { id: 'alors', s: 'a-lor(s)', e: '🤷', ph: "Il pleut, alors on reste à la maison.",
+          hint: "Alors : a, puis lor, avec un S muet à la fin." },
+        'apres',
+        { id: 'assez', s: 'a-[ss][ez]', e: '✋', ph: "J'ai assez mangé, merci !",
+          hint: "Assez : deux S pour le son s, et le son é s'écrit E Z, comme dans nez." },
+        'attention',
+        { id: 'aucun', s: '[au]-c[un]', e: '0️⃣', ph: "Il n'y a aucun nuage dans le ciel.",
+          hint: "Aucun : A U, puis le son un qui s'écrit U N." }
+      ] },
+      { id: 'S4', type: 'mots', pour: 'Mots 16 à 20', titre: 'Mots S4', mots: [
+        { id: 'aujourdhui', s: "[au]-jour-d'(h)ui", e: '📅', ph: "Aujourd'hui, c'est mercredi : pas d'école !",
+          hint: "Aujourd'hui : A U, jour, puis D apostrophe et un H muet avant ui." },
+        { id: 'aupresde', s: '[au]-pr[ès] -de', e: '🧍', ph: "Loulou dort auprès de moi.",
+          hint: "Auprès de : A U, puis près avec un è et un S muet, puis de." },
+        { id: 'auquel', s: '[au]-[qu]el', e: '❓', ph: "C'est le jeu auquel je joue le plus.",
+          hint: "Auquel : A U, puis quel avec Q U." },
+        { id: 'auxquels', s: '[au](x)-[qu]el(s)', e: '❓', ph: "Ce sont les jeux auxquels je joue avec mes frères.",
+          hint: "Auxquels, au pluriel : A U X, avec un X muet, puis quels avec un S muet." },
+        { id: 'aussitot', s: '[au]-[ss]i-t[ô](t)', e: '⚡', ph: "Dès que la cloche sonne, je sors aussitôt.",
+          hint: "Aussitôt : A U, deux S, puis tôt avec un chapeau sur le O et un T muet." },
+        { id: 'autant', s: '[au]-t[an](t)', e: '⚖️', ph: "J'ai autant de cartes que Gabriel.",
+          hint: "Autant : A U, puis tant avec A N et un T muet." }
+      ] },
+      { id: 'S5', type: 'mots', pour: 'Mots 21 à 25', titre: 'Mots S5', mots: [
+        'autour',
+        { id: 'autrefois', s: '[au]-tre-foi(s)', e: '🦕', ph: "Autrefois, il n'y avait pas de trottinettes électriques.",
+          hint: "Autrefois, c'est autre et fois collés : A U au début, et le S de fois ne s'entend pas." },
+        { id: 'avant', s: 'a-v[an](t)', e: '⏮️', ph: "Je regarde à gauche et à droite avant de traverser.",
+          hint: "Avant : le son an s'écrit A N, et le T à la fin ne s'entend pas." },
+        { id: 'avec', s: 'a-vec', e: '🤝', ph: "Je roule avec mon casque sur la tête.",
+          hint: "Avec : A, V, E, C. Le C à la fin, on l'entend bien." },
+        { id: 'alarriere', s: "à -l'a-[rr]iè-re", e: '🔙', ph: "Loulou est assis à l'arrière de la voiture.",
+          hint: "À l'arrière : à avec un accent, l apostrophe, puis arrière avec deux R et un è avec un accent grave." }
+      ] },
+      { id: 'S6', type: 'mots', pour: 'Mots 26 à 30', titre: 'Mots S6', mots: [
+        { id: 'enbas', s: '[en] -ba(s)', e: '⬇️', ph: "Loulou m'attend en bas de l'escalier.",
+          hint: "En bas : deux mots. En avec E N, puis bas avec un S muet." },
+        'beaucoup',
+        { id: 'biensur', s: 'bien -s[û]r', e: '✅', ph: "Bien sûr que je viens jouer !",
+          hint: "Bien sûr : deux mots. Sûr a un petit chapeau sur le U." },
+        'bientot',
+        { id: 'auboutde', s: '[au] -bou(t) -de', e: '🔚', ph: "La boulangerie est au bout de la rue.",
+          hint: "Au bout de : trois mots. Au avec A U, bout avec un T muet, puis de." }
+      ] },
+      { id: 'S7', type: 'mots', pour: 'Mots 31 à 35', titre: 'Mots S7', mots: [
+        { id: 'brusquement', s: 'brus-[qu]e-m[en](t)', e: '💥', ph: "La voiture a freiné brusquement.",
+          hint: "Brusquement : brus, puis Q U E, puis M E N T." },
+        { id: 'aucasou', s: '[au] -ca(s) -[où]', e: '☂️', ph: "Je prends mon manteau au cas où il pleut.",
+          hint: "Au cas où : trois mots. Cas avec un S muet, et où avec un accent grave sur le U, comme pour un endroit." },
+        { id: 'ceci', s: '[c]e-[c]i', e: '👇', ph: "Regarde ceci : c'est ma nouvelle carte !",
+          hint: "Ceci : deux C, qui font le son s devant E et devant I." },
+        { id: 'cela', s: '[c]e-la', e: '👉', ph: "Cela me fait plaisir de te voir.",
+          hint: "Cela : le C fait le son s devant le E, puis la, sans accent." },
+        { id: 'celuila', s: '[c]e-lui~-là', e: '👆', ph: "Je veux le casque orange, celui-là !",
+          hint: "Celui-là : celui, un trait d'union, puis là avec un accent." },
+        'cependant'
+      ] }
+    ]
+  },
+  {
     id: '2026-11-18', titre: 'Devoirs pour jeudi 19 novembre',
     items: [
       {

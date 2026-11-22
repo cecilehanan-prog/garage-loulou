@@ -63,10 +63,10 @@
     shell.setSteps(0, 0);
     const items = D().items;
     if (isOld()) {
-      const t = `${D().titre}. Tu peux refaire ces devoirs pour réviser !`;
-      shell.root.append(h('h2', null, '📦 ' + D().titre), Z.loulouSays(t),
+      const t = D().revision ? `${D().titre}. Choisis une semaine de mots. Doudou t'aide à les réparer, et ils reviendront ensuite dans le Garage des mots.` : `${D().titre}. Tu peux refaire ces devoirs pour réviser !`;
+      shell.root.append(h('h2', null, (D().revision ? '🔤 ' : '📦 ') + D().titre), Z.loulouSays(t),
         ...items.map(it => itemBtn(it, s, D().id)),
-        h('button', { class: 'btn ghost wide', onclick: printSheet }, '🖨️ Réimprimer la feuille'),
+        D().revision ? null : h('button', { class: 'btn ghost wide', onclick: printSheet }, '🖨️ Réimprimer la feuille'),
         h('button', { class: 'btn ghost wide', onclick: () => { Z.sfx.tap(); Z.go('archives'); } }, '⬅️ Les autres semaines'));
       return;
     }
@@ -79,6 +79,8 @@
       Z.loulouSays(t),
       ...items.map(it => itemBtn(it, s)),
       h('button', { class: 'btn ghost wide', onclick: printSheet }, '🖨️ Imprimer pour la maîtresse'),
+      /* les révisions (mots des semaines passées) : un bouton bien visible */
+      ...archives().filter(w => w.revision).map(w => h('button', { class: 'btn orange wide', onclick: () => { Z.sfx.vroum(); Z.go('devoirs', w.id); } }, '🔤 ' + w.titre)),
       archives().length ? h('button', { class: 'btn purple wide', onclick: () => { Z.sfx.tap(); Z.go('archives'); } }, `📦 Mes anciens devoirs (${archives().length})`) : null);
   };
 

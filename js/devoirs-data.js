@@ -90,6 +90,24 @@ window.ZDEVOIRS = {
       ]
     },
     {
+      id: 'motsS8', type: 'mots', pour: 'Jeudi 26 · mots 36 à 40', titre: 'Mes mots à apprendre (S8)',
+      consigne: 'Apprends les mots 36 à 40.',
+      mots: [
+        { id: 'certain', s: '[c]er-t[ain]', e: '🤔', ph: "Je suis certain que Loulou a mangé mes croquettes de Doudou !",
+          hint: "Certain : le C fait le son s devant le E. Et à la fin, le son in s'écrit A I N, comme dans main." },
+        { id: 'cestadire', s: "c'[est]~-à~-di-re", e: '💬', ph: "Je pars demain, c'est-à-dire mardi.",
+          hint: "C'est-à-dire : trois morceaux attachés par deux traits d'union. C apostrophe E S T, puis à avec un accent, puis dire." },
+        { id: 'cestpourquoi', s: "c'[est] -pour-[qu]oi", e: '👉', ph: "Il pleut, c'est pourquoi je mets mon casque et mon manteau.",
+          hint: "C'est pourquoi : deux mots. C apostrophe E S T, puis pourquoi avec Q U." },
+        { id: 'ceuxci', s: '[c][eux]~-[c]i', e: '👇', ph: "Je préfère ces baskets : ceux-ci sont plus rapides !",
+          hint: "Ceux-ci : C E U X, un trait d'union, puis ci avec un C. Le X à la fin de ceux ne s'entend pas." },
+        { id: 'ceuxla', s: '[c][eux]~-là', e: '👉', ph: "Les biscuits ? Ceux-là sont au chocolat.",
+          hint: "Ceux-là : C E U X, un trait d'union, puis là avec un accent, comme pour montrer un endroit." },
+        { id: 'chacun', s: 'cha-c[un]', e: '🙋', ph: "Chacun prend son casque avant de rouler.",
+          hint: "Chacun : cha, puis le son un qui s'écrit U N, comme dans un." }
+      ]
+    },
+    {
       id: 'conjug', type: 'conjug', pour: 'Jeudi 26', titre: 'Les verbes tenir et finir', temps: 'présent',
       consigne: 'Apprends les verbes tenir et finir au présent.',
       verbes: [

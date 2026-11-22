@@ -313,6 +313,8 @@ Z.parseWord = function (spec) {
         i = j;
       }
     }
+    /* « ~ » = un vrai trait d'union dans le mot (celui-là, c'est-à-dire) */
+    segs.forEach(sg => { sg.t = sg.t.replace(/~/g, '-'); });
     return { segs, text: segs.map(s => s.t).join('') };
   });
   return { syl, word: syl.map(s => s.text).join('') };
@@ -320,7 +322,10 @@ Z.parseWord = function (spec) {
 
 /* Affiche un mot en syllabes colorées (bleu / rouge), piège surligné, lettres muettes grisées */
 Z.wordEl = function (parsed, { big = false, tricks = true, cls = '' } = {}) {
-  return Z.h('span', { class: 'word ' + (big ? 'big ' : '') + cls },
+  /* mot avec trait d'union (celui-là) : jamais coupé en deux lignes, et un peu plus petit s'il est long */
+  const hy = parsed.word.includes('-') && !parsed.word.includes(' ');
+  return Z.h('span', { class: 'word ' + (big ? 'big ' : '') + (hy ? 'insecable ' : '') + cls,
+    style: big && hy && parsed.word.length > 8 ? { fontSize: (2.6 * 8 / parsed.word.length).toFixed(2) + 'em' } : null },
     parsed.syl.map((s, i) => Z.h('span', { class: 'syl s' + (i % 2) },
       s.segs.map(sg => Z.h('span', { class: tricks ? ('seg-' + sg.k) : '' }, sg.t)))));
 };

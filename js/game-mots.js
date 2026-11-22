@@ -314,13 +314,14 @@
     shell.clear();
     const chars = [];
     p.syl.forEach((s, si) => [...s.text].forEach(ch => chars.push({ ch, si })));
-    const typed = chars.filter(c => c.ch !== "'" && c.ch !== ' ');
+    const skip = (ch) => ch === "'" || ch === ' ' || ch === '-';   // déjà posés : apostrophe, espace, trait d'union
+    const typed = chars.filter(c => !skip(c.ch));
     const extra = [];
     for (const c of Z.shuffle(typed)) { const x = CONFUS[c.ch.toLowerCase()]; if (x && !extra.includes(x)) extra.push(x); if (extra.length >= 2) break; }
     const pool = Z.shuffle(typed.map(c => c.ch).concat(extra));
     let pos = 0, errors = 0, errHere = 0;
-    const slotEls = chars.map(c => (c.ch === "'" || c.ch === ' ') ? h('span', { class: 'slot small filled' }, c.ch === ' ' ? '·' : "'") : h('span', { class: 'slot small' }, ''));
-    const idxTyped = chars.map((c, k) => k).filter(k => chars[k].ch !== "'" && chars[k].ch !== ' ');
+    const slotEls = chars.map(c => skip(c.ch) ? h('span', { class: 'slot small filled' }, c.ch === ' ' ? '·' : c.ch) : h('span', { class: 'slot small' }, ''));
+    const idxTyped = chars.map((c, k) => k).filter(k => !skip(chars[k].ch));
     slotEls[idxTyped[0]].classList.add('next');
     const tileEls = [];
     const t = 'Défi expert ! Écris le mot lettre par lettre.';
