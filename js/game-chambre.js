@@ -25,8 +25,8 @@
     bureau: { name: 'Bureau', w: 84, h: 42, s: 1.3 },
     chaise: { name: 'Chaise', w: 30, h: 30 },
     lampe: { name: 'Lampe de bureau', w: 20, h: 20 },
-    etagere1: { name: 'Étagère', w: 72, h: 18, s: 1.3 },
-    etagere2: { name: 'Étagère', w: 72, h: 18, s: 1.3 },
+    etagere1: { name: 'Étagère', w: 72, h: 18, s: 1.5 },
+    etagere2: { name: 'Étagère', w: 72, h: 18, s: 1.5 },
     tapis: { name: 'Tapis de jeux', w: 112, h: 84, rug: true, s: 1.3 },   /* s = agrandi (demande de Maman) */
     descente: { name: 'Descente de lit', w: 64, h: 26, rug: true }
   };
@@ -38,7 +38,7 @@
     lampe: { x: 100, y: 52, r: 0 },
     chaise: { x: 56, y: 104, r: 180 },
     tapis: { x: 96, y: 146, r: 0 },
-    etagere2: { x: 90, y: 300, r: 180 }
+    etagere2: { x: 86, y: 298, r: 180 }
   };
 
   /* ---------- Jouets et décos débloqués avec les étoiles ⭐ ---------- */
